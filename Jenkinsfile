@@ -13,7 +13,7 @@ pipeline{
                  script {
                      try {
                          slackSend(
-                             channel: '#jenkins',
+                             channel: '#the-restack-notifier',
                              color: 'good',
                              message: "Restack stage completed successfully! Build: ${env.BUILD_NUMBER}",
                              teamDomain: 'weekend-warriors-hq',
@@ -22,7 +22,7 @@ pipeline{
                      } catch (Exception e) {
                          echo "Slack notification failed: ${e.getMessage()}"
                          // Try alternative method
-                         slackSend channel: '#jenkins', 
+                         slackSend channel: '#the-restack-notifier', 
                                    color: 'good', 
                                    message: "Restack stage completed successfully! Build: ${env.BUILD_NUMBER}"
                      }
@@ -32,7 +32,7 @@ pipeline{
                  script {
                      try {
                          slackSend(
-                             channel: '#jenkins',
+                             channel: '#the-restack-notifier',
                              color: 'danger',
                              message: "Restack stage failed! Build: ${env.BUILD_NUMBER}",
                              teamDomain: 'weekend-warriors-hq',
@@ -54,7 +54,7 @@ pipeline{
                     // Method 1: Try with credentials
                     withCredentials([string(credentialsId: 'slack-connect', variable: 'SLACK_TOKEN')]) {
                         slackSend(
-                            channel: '#jenkins',
+                            channel: '#the-restack-notifier',
                             color: 'good',
                             message: "Pipeline completed successfully! Job: ${env.JOB_NAME}, Build: ${env.BUILD_NUMBER}",
                             teamDomain: 'weekend-warriors-hq',
@@ -66,14 +66,14 @@ pipeline{
                     try {
                         // Method 2: Try without explicit token
                         slackSend(
-                            channel: '#jenkins',
+                            channel: '#the-restack-notifier',
                             color: 'good',
                             message: "Pipeline completed successfully! Build: ${env.BUILD_NUMBER}"
                         )
                     } catch (Exception e2) {
                         echo "Method 2 failed: ${e2.getMessage()}"
                         // Method 3: Try basic configuration
-                        slackSend channel: '#jenkins', message: "Build ${env.BUILD_NUMBER} completed"
+                        slackSend channel: '#the-restack-notifier', message: "Build ${env.BUILD_NUMBER} completed"
                     }
                 }
             }
