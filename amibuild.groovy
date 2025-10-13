@@ -13,7 +13,17 @@ pipeline {
     stage('Setup') {
       steps {
         cleanWs()
-        git branch: "${params.BRANCH}", url: 'https://github.com/MuddyThunder1040/aws-topology.git'
+        script {
+          def branchName = params.BRANCH ?: 'master'
+          echo "Cloning aws-topology repository, branch: ${branchName}"
+          checkout([
+            $class: 'GitSCM',
+            branches: [[name: "*/${branchName}"]],
+            userRemoteConfigs: [[
+              url: 'https://github.com/MuddyThunder1040/aws-topology.git'
+            ]]
+          ])
+        }
       }
     }
 
