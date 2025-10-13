@@ -7,6 +7,9 @@ pipeline {
 
   parameters {
     string(name: 'BRANCH', defaultValue: 'master', description: 'Branch of aws-topology repo')
+    string(name: 'VPC_ID', defaultValue: 'vpc-12345678', description: 'VPC ID for AMI builder instance')
+    string(name: 'SUBNET_ID', defaultValue: 'subnet-12345678', description: 'Subnet ID for AMI builder instance')
+    string(name: 'KEY_NAME', defaultValue: 'my-key-pair', description: 'EC2 Key Pair name for SSH access')
   }
 
   stages {
@@ -75,7 +78,10 @@ pipeline {
             
             # Apply terraform to build AMI
             echo "Building AMI..."
-            terraform apply -target=module.ami_builder -auto-approve
+            terraform apply -target=module.ami_builder -auto-approve \
+              -var="vpc_id=${params.VPC_ID}" \
+              -var="subnet_id=${params.SUBNET_ID}" \
+              -var="key_name=${params.KEY_NAME}"
             
             # Show the AMI ID
             echo "AMI build completed. AMI ID:"
