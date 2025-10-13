@@ -37,6 +37,9 @@ pipeline {
             
             echo "Using VPC: \$VPC_ID, Subnet: \$SUBNET_ID, Key: ${params.KEY_NAME}"
             
+            # Generate unique timestamp for resources
+            TIMESTAMP=\$(date +%s)
+            
             # Initialize terraform and fix module issues automatically
             echo "Initializing Terraform..."
             terraform init || {
@@ -47,6 +50,8 @@ pipeline {
                 sed -i '/^provider "aws"/,/^}/d' main.tf
                 sed -i '/^output "ami_id"/,/^}/d' main.tf
                 sed -i '/^resource "aws_ec2_instance_state"/,/^}/d' main.tf
+                # Make security group name unique
+                sed -i "s/ami-builder-sg/ami-builder-sg-\$TIMESTAMP/g" main.tf
                 cd -
                 terraform init -reconfigure
               fi
