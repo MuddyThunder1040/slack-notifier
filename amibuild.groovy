@@ -1,20 +1,16 @@
-pipelin  parameters {
-    string(name: 'BRANCH', defaultValue: 'master', description: 'Branch to build from')
-    string(name: 'KEY_NAME', defaultValue: 'my-key-pair', description: 'EC2 Key Pair name for SSH access')
-    booleanParam(name: 'AUTO_DETECT_VPC', defaultValue: true, description: 'Auto-detect default VPC and subnet')
-    string(name: 'VPC_ID', defaultValue: '', description: 'VPC ID (leave empty for auto-detect)')
-    string(name: 'SUBNET_ID', defaultValue: '', description: 'Subnet ID (leave empty for auto-detect)')
-  }agent any
+pipeline {
+  agent any
 
   environment {
     AWS_REGION = 'us-east-1'
   }
 
   parameters {
-    string(name: 'BRANCH', defaultValue: 'master', description: 'Branch of aws-topology repo')
-    string(name: 'VPC_ID', defaultValue: 'vpc-12345678', description: 'VPC ID for AMI builder instance')
-    string(name: 'SUBNET_ID', defaultValue: 'subnet-12345678', description: 'Subnet ID for AMI builder instance')
+    string(name: 'BRANCH', defaultValue: 'master', description: 'Branch to build from')
     string(name: 'KEY_NAME', defaultValue: 'my-key-pair', description: 'EC2 Key Pair name for SSH access')
+    booleanParam(name: 'AUTO_DETECT_VPC', defaultValue: true, description: 'Auto-detect default VPC and subnet')
+    string(name: 'VPC_ID', defaultValue: '', description: 'VPC ID (leave empty for auto-detect)')
+    string(name: 'SUBNET_ID', defaultValue: '', description: 'Subnet ID (leave empty for auto-detect)')
   }
 
   stages {
