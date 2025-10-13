@@ -45,12 +45,13 @@ pipeline {
             SUBNET_ID=\$(aws ec2 describe-subnets --filters "Name=vpc-id,Values=\$VPC_ID" --query "Subnets[0].SubnetId" --output text)
             
             # Check if key pair exists, create if not
-            if ! aws ec2 describe-key-pairs --key-names "\$KEY_NAME" &>/dev/null; then
+            echo "Checking if key pair exists: \$KEY_NAME"
+            if aws ec2 describe-key-pairs --key-names "\$KEY_NAME" &>/dev/null; then
+              echo "Using existing key pair: \$KEY_NAME"
+            else
               echo "Creating key pair: \$KEY_NAME"
               aws ec2 create-key-pair --key-name "\$KEY_NAME" --query 'KeyMaterial' --output text > /tmp/\$KEY_NAME.pem
               echo "Key pair created and saved to /tmp/\$KEY_NAME.pem"
-            else
-              echo "Using existing key pair: \$KEY_NAME"
             fi
             
             echo "Using VPC: \$VPC_ID, Subnet: \$SUBNET_ID, Key: \$KEY_NAME"
