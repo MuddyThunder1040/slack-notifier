@@ -54,7 +54,11 @@ pipeline {
         stage('Docker Test') {
             steps {
                 sh '''
-                    docker run -d --name test-container -p 3001:3001 ${DOCKER_IMAGE_NAME}:${DOCKER_TAG}
+                    # Clean up any existing test containers
+                    docker rm -f test-container || true
+                    
+                    # Run container with random port to avoid conflicts
+                    docker run -d --name test-container -p 0:3001 ${DOCKER_IMAGE_NAME}:${DOCKER_TAG}
                     sleep 5
                     docker ps | grep test-container
                     docker stop test-container && docker rm test-container
