@@ -36,26 +36,43 @@ pipeline {
             export AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
             export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
             
-            # Initialize terraform first to download modules
-            terraform init
+            # Try to initialize terraform (may fail due to module issues)
+            echo "Attempting initial terraform init..."
+            terraform init || {
+              echo "Initial init failed as expected due to module duplicates"
+              
+              # Check if module was downloaded despite the error
+              if [ -d .terraform/modules/ami_builder/ami ]; then
+                echo "Module was downloaded, proceeding with fixes..."
+                
+                # Fix duplicate declarations in the downloaded module
+                echo "Fixing module duplicates..."
+                cd .terraform/modules/ami_builder/ami
+                
+                # Create a backup and then clean main.tf
+                cp main.tf main.tf.backup
+                
+                # Keep only resources, remove variables, provider, and output
+                grep -v "^variable" main.tf.backup | grep -v "^provider" | grep -v "^output" > main.tf
+                
+                echo "Module main.tf cleaned"
+                cd - > /dev/null
+                
+                # Re-initialize after fixing
+                echo "Re-initializing terraform..."
+                terraform init -reconfigure
+              else
+                echo "Module not downloaded, cannot proceed"
+                exit 1
+              fi
+            }
             
-            # Fix duplicate declarations in the downloaded module
-            if [ -f .terraform/modules/ami_builder/ami/main.tf ]; then
-              echo "Fixing module duplicates..."
-              # Remove variable declarations from main.tf (keep only resources)
-              sed -i '/^variable "region"/,/^}/d' .terraform/modules/ami_builder/ami/main.tf
-              sed -i '/^variable "vpc_id"/,/^}/d' .terraform/modules/ami_builder/ami/main.tf
-              sed -i '/^variable "subnet_id"/,/^}/d' .terraform/modules/ami_builder/ami/main.tf
-              sed -i '/^variable "key_name"/,/^}/d' .terraform/modules/ami_builder/ami/main.tf
-              sed -i '/^variable "app_docker_image"/,/^}/d' .terraform/modules/ami_builder/ami/main.tf
-              sed -i '/^provider "aws"/,/^}/d' .terraform/modules/ami_builder/ami/main.tf
-              sed -i '/^output "ami_id"/,/^}/d' .terraform/modules/ami_builder/ami/main.tf
-              echo "Module fixed successfully"
-            fi
-            
-            # Re-initialize after fixing
-            terraform init -reconfigure
+            # Apply terraform to build AMI
+            echo "Building AMI..."
             terraform apply -target=module.ami_builder -auto-approve
+            
+            # Show the AMI ID
+            echo "AMI build completed. AMI ID:"
             terraform output ami_id
           '''
         }
