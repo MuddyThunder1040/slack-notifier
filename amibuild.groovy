@@ -92,7 +92,38 @@ pipeline {
             
             # Save AMI ID to file for downstream jobs
             echo "\$AMI_ID" > ami_id.txt
+            
+            # Save AMI ID for build display
+            echo "AMI_ID=\$AMI_ID" > build_info.properties
           """
+        }
+      }
+    }
+    
+    stage('Update Build Info') {
+      steps {
+        script {
+          // Read the AMI ID from the properties file
+          def buildInfo = readProperties file: 'build_info.properties'
+          env.AMI_ID = buildInfo.AMI_ID
+          
+          // Set build display name and description
+          currentBuild.displayName = "#${BUILD_NUMBER} - AMI: ${env.AMI_ID}"
+          currentBuild.description = """
+            <b>AMI ID:</b> ${env.AMI_ID}<br/>
+            <b>Key Pair:</b> ${params.KEY_NAME ?: 'my-key-pair'}<br/>
+            <b>Region:</b> ${env.AWS_REGION}<br/>
+            <b>Status:</b> <span style="color: green;">✅ Success</span>
+          """
+          
+          // Add a badge for the AMI ID
+          try {
+            addShortText(text: env.AMI_ID, color: "white", background: "green")
+          } catch (Exception e) {
+            echo "Badge plugin not available, skipping badge creation"
+          }
+          
+          echo "Build updated with AMI ID: ${env.AMI_ID}"
         }
       }
     }
@@ -101,14 +132,29 @@ pipeline {
   post {
     always {
       // Archive the AMI ID for use in deployment pipeline
-      archiveArtifacts artifacts: 'ami_id.txt', allowEmptyArchive: false
+      archiveArtifacts artifacts: 'ami_id.txt,build_info.properties', allowEmptyArchive: true
       cleanWs()
     }
     success {
-      echo "AMI build completed successfully! Check the console output for the AMI ID."
+      script {
+        // Ensure AMI ID is visible in build sidebar even if Update Build Info stage didn't run
+        if (env.AMI_ID) {
+          echo "✅ AMI build completed successfully!"
+          echo "🎯 AMI ID: ${env.AMI_ID}"
+          echo "📋 Check the build sidebar for AMI details"
+        }
+      }
     }
     failure {
-      echo "AMI build failed. Check the logs for errors."
+      script {
+        currentBuild.displayName = "#${BUILD_NUMBER} - ❌ FAILED"
+        currentBuild.description = """
+          <b>Status:</b> <span style="color: red;">❌ Failed</span><br/>
+          <b>Key Pair:</b> ${params.KEY_NAME ?: 'my-key-pair'}<br/>
+          <b>Region:</b> ${env.AWS_REGION}
+        """
+        echo "❌ AMI build failed. Check the logs for errors."
+      }
     }
   }
 }
