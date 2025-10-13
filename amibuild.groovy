@@ -29,13 +29,13 @@ pipeline {
           usernamePassword(credentialsId: 'Aws-cli', passwordVariable: 'AWS_SECRET_ACCESS_KEY', usernameVariable: 'AWS_ACCESS_KEY_ID')
         ]) {
           sh """
-            # Set and validate parameters
-            KEY_NAME="${params.KEY_NAME}"
+            # Set and validate parameters with fallback
+            KEY_NAME="${params.KEY_NAME ?: 'my-key-pair'}"
             echo "Using KEY_NAME: \$KEY_NAME"
             
             if [ -z "\$KEY_NAME" ]; then
-              echo "ERROR: KEY_NAME parameter is empty!"
-              exit 1
+              echo "Using fallback KEY_NAME: my-key-pair"
+              KEY_NAME="my-key-pair"
             fi
             
             # Auto-detect VPC and subnet
