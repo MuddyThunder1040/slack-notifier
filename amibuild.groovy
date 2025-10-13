@@ -52,8 +52,14 @@ pipeline {
                 # Create a backup and then clean main.tf
                 cp main.tf main.tf.backup
                 
-                # Keep only resources, remove variables, provider, and output
-                grep -v "^variable" main.tf.backup | grep -v "^provider" | grep -v "^output" > main.tf
+                # Remove duplicate declarations with precise sed commands
+                sed -i '1,5d' main.tf  # Remove first 5 lines (variable declarations)
+                sed -i '/^provider "aws"/,/^}/d' main.tf  # Remove provider block
+                sed -i '/^output "ami_id"/,/^}/d' main.tf  # Remove output block
+                
+                # Verify the file looks correct
+                echo "First few lines of cleaned main.tf:"
+                head -10 main.tf
                 
                 echo "Module main.tf cleaned"
                 cd - > /dev/null
