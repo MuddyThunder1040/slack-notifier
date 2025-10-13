@@ -3,7 +3,7 @@ pipeline {
     
     environment {
         DOCKER_REGISTRY = 'https://index.docker.io/v1/'
-        DOCKER_IMAGE_NAME = 'muddythunder1040/appserver'
+        DOCKER_IMAGE_NAME = 'muddythunder/appserver'
         DOCKER_TAG = "${env.BUILD_NUMBER}"
         GITHUB_REPO = 'https://github.com/MuddyThunder1040/appserver.git'
         SLACK_CHANNEL = '#the-restack-notifier'
