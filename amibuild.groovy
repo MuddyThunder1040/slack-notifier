@@ -6,7 +6,7 @@ pipeline {
   }
 
   parameters {
-    string(name: 'BRANCH', defaultValue: 'main', description: 'Branch of aws-topology repo')
+    string(name: 'BRANCH', defaultValue: 'master', description: 'Branch of aws-topology repo')
   }
 
   stages {
