@@ -35,16 +35,16 @@ pipeline {
         withCredentials([
           usernamePassword(credentialsId: 'Aws-cli', passwordVariable: 'AWS_SECRET_ACCESS_KEY', usernameVariable: 'AWS_ACCESS_KEY_ID')
         ]) {
-          sh '''
-            export AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
-            export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
+          sh """
+            export AWS_ACCESS_KEY_ID=\$AWS_ACCESS_KEY_ID
+            export AWS_SECRET_ACCESS_KEY=\$AWS_SECRET_ACCESS_KEY
             
             # Set parameter variables for shell use
             export VPC_ID="${params.VPC_ID}"
             export SUBNET_ID="${params.SUBNET_ID}"
             export KEY_NAME="${params.KEY_NAME}"
             
-            echo "Using parameters: VPC_ID=$VPC_ID, SUBNET_ID=$SUBNET_ID, KEY_NAME=$KEY_NAME"
+            echo "Using parameters: VPC_ID=\$VPC_ID, SUBNET_ID=\$SUBNET_ID, KEY_NAME=\$KEY_NAME"
             
             # Try to initialize terraform (may fail due to module issues)
             echo "Attempting initial terraform init..."
@@ -86,14 +86,14 @@ pipeline {
             # Apply terraform to build AMI
             echo "Building AMI..."
             terraform apply -target=module.ami_builder -auto-approve \
-              -var="vpc_id=$VPC_ID" \
-              -var="subnet_id=$SUBNET_ID" \
-              -var="key_name=$KEY_NAME"
+              -var="vpc_id=\$VPC_ID" \
+              -var="subnet_id=\$SUBNET_ID" \
+              -var="key_name=\$KEY_NAME"
             
             # Show the AMI ID
             echo "AMI build completed. AMI ID:"
             terraform output ami_id
-          '''
+          """
         }
       }
     }
