@@ -29,6 +29,15 @@ pipeline {
           usernamePassword(credentialsId: 'Aws-cli', passwordVariable: 'AWS_SECRET_ACCESS_KEY', usernameVariable: 'AWS_ACCESS_KEY_ID')
         ]) {
           sh """
+            # Set and validate parameters
+            KEY_NAME="${params.KEY_NAME}"
+            echo "Using KEY_NAME: \$KEY_NAME"
+            
+            if [ -z "\$KEY_NAME" ]; then
+              echo "ERROR: KEY_NAME parameter is empty!"
+              exit 1
+            fi
+            
             # Auto-detect VPC and subnet
             echo "Auto-detecting AWS resources..."
             VPC_ID=\$(aws ec2 describe-vpcs --filters "Name=is-default,Values=true" --query "Vpcs[0].VpcId" --output text)
@@ -36,15 +45,15 @@ pipeline {
             SUBNET_ID=\$(aws ec2 describe-subnets --filters "Name=vpc-id,Values=\$VPC_ID" --query "Subnets[0].SubnetId" --output text)
             
             # Check if key pair exists, create if not
-            if ! aws ec2 describe-key-pairs --key-names "${params.KEY_NAME}" &>/dev/null; then
-              echo "Creating key pair: ${params.KEY_NAME}"
-              aws ec2 create-key-pair --key-name "${params.KEY_NAME}" --query 'KeyMaterial' --output text > /tmp/${params.KEY_NAME}.pem
-              echo "Key pair created and saved to /tmp/${params.KEY_NAME}.pem"
+            if ! aws ec2 describe-key-pairs --key-names "\$KEY_NAME" &>/dev/null; then
+              echo "Creating key pair: \$KEY_NAME"
+              aws ec2 create-key-pair --key-name "\$KEY_NAME" --query 'KeyMaterial' --output text > /tmp/\$KEY_NAME.pem
+              echo "Key pair created and saved to /tmp/\$KEY_NAME.pem"
             else
-              echo "Using existing key pair: ${params.KEY_NAME}"
+              echo "Using existing key pair: \$KEY_NAME"
             fi
             
-            echo "Using VPC: \$VPC_ID, Subnet: \$SUBNET_ID, Key: ${params.KEY_NAME}"
+            echo "Using VPC: \$VPC_ID, Subnet: \$SUBNET_ID, Key: \$KEY_NAME"
             
             # Generate unique timestamp for resources
             TIMESTAMP=\$(date +%s)
@@ -71,7 +80,7 @@ pipeline {
             terraform apply -target=module.ami_builder -auto-approve \\
               -var="vpc_id=\$VPC_ID" \\
               -var="subnet_id=\$SUBNET_ID" \\
-              -var="key_name=${params.KEY_NAME}"
+              -var="key_name=\$KEY_NAME"
             
             # Get and display AMI ID
             AMI_ID=\$(terraform output ami_id | tr -d '"')
