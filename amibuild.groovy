@@ -35,6 +35,15 @@ pipeline {
             [ "\$VPC_ID" = "None" ] && VPC_ID=\$(aws ec2 describe-vpcs --query "Vpcs[0].VpcId" --output text)
             SUBNET_ID=\$(aws ec2 describe-subnets --filters "Name=vpc-id,Values=\$VPC_ID" --query "Subnets[0].SubnetId" --output text)
             
+            # Check if key pair exists, create if not
+            if ! aws ec2 describe-key-pairs --key-names "${params.KEY_NAME}" &>/dev/null; then
+              echo "Key pair '${params.KEY_NAME}' not found, creating it..."
+              aws ec2 create-key-pair --key-name "${params.KEY_NAME}" --query 'KeyMaterial' --output text > /tmp/${params.KEY_NAME}.pem
+              echo "Key pair created and saved to /tmp/${params.KEY_NAME}.pem"
+            else
+              echo "Using existing key pair: ${params.KEY_NAME}"
+            fi
+            
             echo "Using VPC: \$VPC_ID, Subnet: \$SUBNET_ID, Key: ${params.KEY_NAME}"
             
             # Generate unique timestamp for resources
