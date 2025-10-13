@@ -29,8 +29,12 @@ pipeline {
 
     stage('Build AMI') {
       steps {
-        withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'Aws-cli']]) {
+        withCredentials([
+          usernamePassword(credentialsId: 'Aws-cli', passwordVariable: 'AWS_SECRET_ACCESS_KEY', usernameVariable: 'AWS_ACCESS_KEY_ID')
+        ]) {
           sh '''
+            export AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
+            export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
             terraform init
             terraform apply -target=module.ami_builder -auto-approve
             terraform output ami_id
