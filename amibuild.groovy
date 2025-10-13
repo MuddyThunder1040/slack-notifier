@@ -1,14 +1,14 @@
 pipeline {
   agent any
-
+  
   environment {
     AWS_REGION = 'us-east-1'
   }
-
+  
   parameters {
     string(name: 'KEY_NAME', defaultValue: 'my-key-pair', description: 'EC2 Key Pair name')
   }
-
+  
   stages {
     stage('Setup') {
       steps {
@@ -22,7 +22,7 @@ pipeline {
         ])
       }
     }
-
+    
     stage('Build AMI') {
       steps {
         withCredentials([
@@ -37,7 +37,7 @@ pipeline {
             
             # Check if key pair exists, create if not
             if ! aws ec2 describe-key-pairs --key-names "${params.KEY_NAME}" &>/dev/null; then
-              echo "Key pair '${params.KEY_NAME}' not found, creating it..."
+              echo "Creating key pair: ${params.KEY_NAME}"
               aws ec2 create-key-pair --key-name "${params.KEY_NAME}" --query 'KeyMaterial' --output text > /tmp/${params.KEY_NAME}.pem
               echo "Key pair created and saved to /tmp/${params.KEY_NAME}.pem"
             else
@@ -68,21 +68,37 @@ pipeline {
             
             # Build AMI
             echo "Building AMI..."
-            terraform apply -target=module.ami_builder -auto-approve \
-              -var="vpc_id=\$VPC_ID" \
-              -var="subnet_id=\$SUBNET_ID" \
+            terraform apply -target=module.ami_builder -auto-approve \\
+              -var="vpc_id=\$VPC_ID" \\
+              -var="subnet_id=\$SUBNET_ID" \\
               -var="key_name=${params.KEY_NAME}"
             
-            echo "AMI ID: \$(terraform output ami_id)"
+            # Get and display AMI ID
+            AMI_ID=\$(terraform output ami_id | tr -d '"')
+            echo "========================================="
+            echo "AMI BUILD COMPLETED SUCCESSFULLY!"
+            echo "AMI ID: \$AMI_ID"
+            echo "========================================="
+            
+            # Save AMI ID to file for downstream jobs
+            echo "\$AMI_ID" > ami_id.txt
           """
         }
       }
     }
   }
-
+  
   post {
     always {
+      // Archive the AMI ID for use in deployment pipeline
+      archiveArtifacts artifacts: 'ami_id.txt', allowEmptyArchive: false
       cleanWs()
+    }
+    success {
+      echo "AMI build completed successfully! Check the console output for the AMI ID."
+    }
+    failure {
+      echo "AMI build failed. Check the logs for errors."
     }
   }
 }
