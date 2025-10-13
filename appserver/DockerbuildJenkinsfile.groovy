@@ -7,7 +7,7 @@ pipeline {
         DOCKER_TAG = "${env.BUILD_NUMBER}"
         GITHUB_REPO = 'https://github.com/MuddyThunder1040/appserver.git'
         SLACK_CHANNEL = '#the-restack-notifier'
-        DOCKER_CREDENTIALS_ID = 'c71d37ab-7559-4e0e-a3ea-fcf0877f74e'
+        DOCKER_CREDENTIALS_ID = 'docker-token'
     }
     
     stages {
@@ -71,36 +71,12 @@ pipeline {
                 anyOf { branch 'main'; branch 'master' }
             }
             steps {
-                script {
-                    // Try the Docker Hub credential ID from the screenshot
-                    def credentialIds = [
-                        'c71d37ab-7559-4e0e-a3ea-fcf0877f74e',  // Original
-                        'docker-hub-credentials',                // Common pattern
-                        'dockerhub',                            // Simple pattern
-                        'muddythunder1040-dockerhub'            // User-based pattern
-                    ]
-                    
-                    def success = false
-                    for (credId in credentialIds) {
-                        try {
-                            echo "Trying credential ID: ${credId}"
-                            withCredentials([usernamePassword(credentialsId: credId, passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME')]) {
-                                sh '''
-                                    echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
-                                    docker push ${DOCKER_IMAGE_NAME}:${DOCKER_TAG}
-                                    docker push ${DOCKER_IMAGE_NAME}:latest
-                                '''
-                            }
-                            success = true
-                            break
-                        } catch (Exception e) {
-                            echo "Credential ID ${credId} not found: ${e.message}"
-                        }
-                    }
-                    
-                    if (!success) {
-                        error "No valid Docker Hub credentials found. Please check Jenkins credentials configuration."
-                    }
+                withCredentials([usernamePassword(credentialsId: "${DOCKER_CREDENTIALS_ID}", passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME')]) {
+                    sh '''
+                        echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
+                        docker push ${DOCKER_IMAGE_NAME}:${DOCKER_TAG}
+                        docker push ${DOCKER_IMAGE_NAME}:latest
+                    '''
                 }
             }
         }
