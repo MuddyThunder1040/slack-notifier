@@ -8,24 +8,16 @@ pipeline {
         stage('Remove File') {
             steps {
                 script {
-                    // Define the file path
-                    def filePath = 'newfile.txt'
+                    // Use the parameter instead of hardcoded value
+                    def filePath = params.FILE_NAME
 
-                    // Remove the file
-                    deleteFile file: filePath
-
-                    // Optionally, print a message to confirm the file was removed
-                    echo "File '${filePath}' has been removed."
-                }
-            }
-        }
-    }
-
-                    // Write content to the file
-                    writeFile file: filePath, text: fileContent
-
-                    // Optionally, print a message to confirm the file was added
-                    echo "File '${filePath}' has been created with content."
+                    // Check if file exists before removing
+                    if (fileExists(filePath)) {
+                        sh "rm -f ${filePath}"
+                        echo "File '${filePath}' has been removed."
+                    } else {
+                        echo "File '${filePath}' does not exist, nothing to remove."
+                    }
                 }
             }
         }

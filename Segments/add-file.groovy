@@ -9,12 +9,11 @@ pipeline {
             steps {
                 script {
                     def fileName = params.FILE_NAME
-                    content = cat /proc/cpuinfo
+                    def content = sh(script: "cat /proc/cpuinfo || echo 'System information not available'", returnStdout: true).trim()
                     writeFile file: fileName, text: content
                     echo "File '${fileName}' has been created."
                 }
             }
         }
     }
-    
-       
+}
