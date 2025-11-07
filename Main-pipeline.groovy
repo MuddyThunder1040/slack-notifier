@@ -2,23 +2,16 @@ pipeline {
     agent any
 
     parameters {
-        string(name: 'FILE_NAME', defaultValue: 'newfile.txt', description: 'Name of the file to manage')
-        choice(name: 'ACTION', choices: ['ADD', 'REMOVE', 'STATUS'], description: 'Action to perform on the file')
+        string(name: 'FILE_NAME', defaultValue: 'newfile.txt', description: 'File name')
+        choice(name: 'ACTION', choices: ['ADD', 'REMOVE', 'STATUS'], description: 'Action')
     }
     
     stages {
         stage('Status Check') {
-            when {
-                anyOf {
-                    expression { params.ACTION == 'ADD' }
-                    expression { params.ACTION == 'REMOVE' }
-                    expression { params.ACTION == 'STATUS' }
-                }
-            }
             steps {
                 script {
-                    echo "Running status check before ${params.ACTION} operation..."
-                    build job: 'status-pipeline', parameters: [
+                    echo "Running status check..."
+                    build job: 'status', parameters: [
                         string(name: 'FILE_NAME', value: params.FILE_NAME)
                     ]
                 }
@@ -32,7 +25,7 @@ pipeline {
             steps {
                 script {
                     echo "Adding file: ${params.FILE_NAME}"
-                    build job: 'add-file-pipeline', parameters: [
+                    build job: 'add-file', parameters: [
                         string(name: 'FILE_NAME', value: params.FILE_NAME)
                     ]
                 }
@@ -46,40 +39,25 @@ pipeline {
             steps {
                 script {
                     echo "Removing file: ${params.FILE_NAME}"
-                    build job: 'remove-file-pipeline', parameters: [
+                    build job: 'remove-file', parameters: [
                         string(name: 'FILE_NAME', value: params.FILE_NAME)
                     ]
                 }
             }
         }
         
-        stage('Final Status Check') {
+        stage('Final Status') {
             when {
-                anyOf {
-                    expression { params.ACTION == 'ADD' }
-                    expression { params.ACTION == 'REMOVE' }
-                }
+                not { expression { params.ACTION == 'STATUS' } }
             }
             steps {
                 script {
-                    echo "Running final status check after ${params.ACTION} operation..."
-                    build job: 'status-pipeline', parameters: [
+                    echo "Running final status check..."
+                    build job: 'status', parameters: [
                         string(name: 'FILE_NAME', value: params.FILE_NAME)
                     ]
                 }
             }
-        }
-    }
-    
-    post {
-        always {
-            echo "Pipeline completed for action: ${params.ACTION} on file: ${params.FILE_NAME}"
-        }
-        success {
-            echo "Pipeline executed successfully!"
-        }
-        failure {
-            echo "Pipeline failed. Check the logs for details."
         }
     }
 }
