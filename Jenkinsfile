@@ -29,8 +29,17 @@ pipeline {
                             message: "🎉 Pipeline completed successfully! Job: ${env.JOB_NAME}, Build: ${env.BUILD_NUMBER}",
                             tokenCredentialId: env.SLACK_CREDENTIAL_ID ?: ''
                         )
+                        echo "✅ Slack notification sent successfully!"
                     } catch (Exception e) {
-                        echo "⚠️ Slack notification failed: ${e.message}"
+                        echo "⚠️ Slack notification failed!"
+                        echo "Error: ${e.class.name}: ${e.message}"
+                        echo "Stack trace:"
+                        e.printStackTrace()
+                        echo ""
+                        echo "Troubleshooting:"
+                        echo "1. Verify credential ID 'slack-token' exists in Jenkins"
+                        echo "2. Check token format and permissions"
+                        echo "3. Verify channel '#the-restack-notifier' exists"
                     }
                 } else {
                     echo "✅ Build successful! (Slack notifications disabled)"
@@ -47,8 +56,12 @@ pipeline {
                             message: "💥 Pipeline failed! Job: ${env.JOB_NAME}, Build: ${env.BUILD_NUMBER}",
                             tokenCredentialId: env.SLACK_CREDENTIAL_ID ?: ''
                         )
+                        echo "✅ Slack notification sent successfully!"
                     } catch (Exception e) {
-                        echo "⚠️ Slack notification failed: ${e.message}"
+                        echo "⚠️ Slack notification failed!"
+                        echo "Error: ${e.class.name}: ${e.message}"
+                        echo "Stack trace:"
+                        e.printStackTrace()
                     }
                 } else {
                     echo "❌ Build failed! (Slack notifications disabled)"
