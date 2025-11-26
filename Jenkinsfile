@@ -3,7 +3,7 @@ pipeline {
     
     environment {
         // Set to 'true' to enable Slack notifications (requires configuration)
-        ENABLE_SLACK = 'false'
+        ENABLE_SLACK = 'true'
         SLACK_CHANNEL = '#the-restack-notifier'
         SLACK_CREDENTIAL_ID = 'slack-token'
         // Optional: Slack workspace URL
@@ -28,24 +28,30 @@ pipeline {
                     echo "Channel: ${env.SLACK_CHANNEL}"
                     echo "Credential ID: ${env.SLACK_CREDENTIAL_ID}"
                     
+                    // Try sending to the channel
                     def slackResponse = slackSend(
                         channel: env.SLACK_CHANNEL,
                         color: 'good',
                         message: "🎉 Pipeline completed successfully!\nJob: ${env.JOB_NAME}\nBuild: ${env.BUILD_NUMBER}\nURL: ${env.BUILD_URL}",
-                        tokenCredentialId: env.SLACK_CREDENTIAL_ID
+                        tokenCredentialId: env.SLACK_CREDENTIAL_ID,
+                        failOnError: false
                     )
                     
-                    if (slackResponse != null && slackResponse.successful) {
-                        echo "✅ Slack notification sent successfully!"
-                        echo "Response: ${slackResponse}"
+                    if (slackResponse != null) {
+                        echo "✅ Slack notification sent!"
+                        echo "Thread ID: ${slackResponse.threadId}"
+                        echo "Timestamp: ${slackResponse.ts}"
                     } else {
-                        echo "⚠️ Slack notification may have failed"
-                        echo "Response: ${slackResponse}"
+                        echo "⚠️ Slack response was null - possible causes:"
                         echo ""
-                        echo "Please check:"
-                        echo "1. Jenkins credential 'slack-token' contains valid Bot User OAuth Token (xoxb-...)"
-                        echo "2. Bot is invited to channel '#the-restack-notifier'"
-                        echo "3. Bot has chat:write permission"
+                        echo "ACTION REQUIRED:"
+                        echo "1. Go to Slack channel: #the-restack-notifier"
+                        echo "2. Type: /invite @<your-bot-name>"
+                        echo "3. Or add the bot via channel settings → Integrations"
+                        echo ""
+                        echo "Verify bot has these OAuth scopes:"
+                        echo "  • chat:write"
+                        echo "  • chat:write.public (for posting to channels without invite)"
                     }
                 } else {
                     echo "✅ Build successful! (Slack notifications disabled)"
