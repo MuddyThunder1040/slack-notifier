@@ -3,7 +3,7 @@ pipeline {
     
     environment {
         // Set to 'true' to enable Slack notifications (requires configuration)
-        ENABLE_SLACK = 'true'
+        ENABLE_SLACK = 'false'
         SLACK_CHANNEL = '#the-restack-notifier'
         SLACK_CREDENTIAL_ID = 'slack-token'
         // Optional: Slack workspace URL
