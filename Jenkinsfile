@@ -14,7 +14,6 @@ pipeline {
         stage('restack') {
             steps {
                 echo 'restack'
-                sleep 10
                 echo 'restack done'
             }
         }
