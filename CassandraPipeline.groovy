@@ -80,16 +80,15 @@ pipeline {
                     # Install Docker CLI if not present
                     if ! command -v docker &> /dev/null; then
                         echo "Installing Docker CLI..."
-                        curl -fsSL https://get.docker.com -o get-docker.sh
-                        sh get-docker.sh --dry-run
-                        rm get-docker.sh
+                        mkdir -p ~/bin
                         
-                        # Simpler approach - just download docker binary
-                        curl -fsSL https://download.docker.com/linux/static/stable/x86_64/docker-24.0.7.tgz -o docker.tgz
+                        # Download latest stable Docker CLI
+                        curl -fsSL https://download.docker.com/linux/static/stable/x86_64/docker-27.4.0.tgz -o docker.tgz
                         tar xzvf docker.tgz --strip 1 -C ~/bin docker/docker
                         rm docker.tgz
                         chmod +x ~/bin/docker
                         export PATH=$PATH:~/bin
+                        echo "Docker CLI installed: $(~/bin/docker --version)"
                     fi
                     
                     # Check if docker socket is accessible
@@ -100,7 +99,7 @@ pipeline {
                         export PATH=$PATH:~/bin
                         if docker ps &> /dev/null; then
                             echo "✅ Docker is accessible!"
-                            docker version --format '{{.Server.Version}}'
+                            docker version --format 'Client: {{.Client.Version}} | Server: {{.Server.Version}}'
                         else
                             echo "⚠️  Docker socket permissions issue"
                             echo "Run this on your host machine:"
