@@ -36,24 +36,36 @@ pipeline {
                 sh '''
                     if ! command -v terraform &> /dev/null; then
                         echo "Terraform not found. Installing..."
+                        mkdir -p ~/bin
                         cd /tmp
-                        wget -q https://releases.hashicorp.com/terraform/1.6.6/terraform_1.6.6_linux_amd64.zip
-                        unzip -o terraform_1.6.6_linux_amd64.zip
+                        
+                        # Try curl first, then wget
+                        if command -v curl &> /dev/null; then
+                            curl -sL https://releases.hashicorp.com/terraform/1.6.6/terraform_1.6.6_linux_amd64.zip -o terraform.zip
+                        elif command -v wget &> /dev/null; then
+                            wget -q https://releases.hashicorp.com/terraform/1.6.6/terraform_1.6.6_linux_amd64.zip -O terraform.zip
+                        else
+                            echo "ERROR: Neither curl nor wget found. Cannot download Terraform."
+                            echo "Please install Terraform manually on the Jenkins agent."
+                            exit 1
+                        fi
+                        
+                        unzip -o terraform.zip
                         chmod +x terraform
-                        sudo mv terraform /usr/local/bin/ || mv terraform ~/bin/ || mkdir -p ~/bin && mv terraform ~/bin/
-                        rm -f terraform_1.6.6_linux_amd64.zip
+                        mv terraform ~/bin/
+                        rm -f terraform.zip
                         export PATH=$PATH:~/bin
-                        echo "Terraform installed successfully"
+                        echo "Terraform installed successfully to ~/bin"
                     else
                         echo "Terraform already installed: $(terraform version)"
                     fi
                     
                     # Verify installation
+                    export PATH=$PATH:~/bin
                     if command -v terraform &> /dev/null; then
                         terraform version
                     elif [ -f ~/bin/terraform ]; then
                         ~/bin/terraform version
-                        export PATH=$PATH:~/bin
                     else
                         echo "ERROR: Terraform installation failed"
                         exit 1
