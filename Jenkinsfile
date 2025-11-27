@@ -27,8 +27,9 @@ pipeline {
                     echo "Channel: ${env.SLACK_CHANNEL}"
                     echo "Credential ID: ${env.SLACK_CREDENTIAL_ID}"
                     
-                    // Try sending to the channel
+                    // Try sending to the channel with botUser enabled
                     def slackResponse = slackSend(
+                        botUser: true,
                         channel: env.SLACK_CHANNEL,
                         color: 'good',
                         message: "🎉 Pipeline completed successfully!\nJob: ${env.JOB_NAME}\nBuild: ${env.BUILD_NUMBER}\nURL: ${env.BUILD_URL}",
@@ -41,16 +42,13 @@ pipeline {
                         echo "Thread ID: ${slackResponse.threadId}"
                         echo "Timestamp: ${slackResponse.ts}"
                     } else {
-                        echo "⚠️ Slack response was null - possible causes:"
+                        echo "⚠️ Slack response was null"
                         echo ""
-                        echo "ACTION REQUIRED:"
-                        echo "1. Go to Slack channel: #the-restack-notifier"
-                        echo "2. Type: /invite @<your-bot-name>"
-                        echo "3. Or add the bot via channel settings → Integrations"
-                        echo ""
-                        echo "Verify bot has these OAuth scopes:"
-                        echo "  • chat:write"
-                        echo "  • chat:write.public (for posting to channels without invite)"
+                        echo "Troubleshooting steps:"
+                        echo "1. Verify the token in Jenkins credential 'slack-token' is the Bot User OAuth Token (xoxb-...)"
+                        echo "2. Go to https://api.slack.com/apps → Your App → OAuth & Permissions"
+                        echo "3. Check Bot Token Scopes include: chat:write, chat:write.public"
+                        echo "4. After adding scopes, reinstall app and update token in Jenkins"
                     }
                 } else {
                     echo "✅ Build successful! (Slack notifications disabled)"
@@ -62,17 +60,16 @@ pipeline {
                 if (env.ENABLE_SLACK == 'true') {
                     try {
                         slackSend(
+                            botUser: true,
                             channel: env.SLACK_CHANNEL,
                             color: 'danger',
                             message: "💥 Pipeline failed! Job: ${env.JOB_NAME}, Build: ${env.BUILD_NUMBER}",
-                            tokenCredentialId: env.SLACK_CREDENTIAL_ID ?: ''
+                            tokenCredentialId: env.SLACK_CREDENTIAL_ID ?: '',
+                            failOnError: false
                         )
-                        echo "✅ Slack notification sent successfully!"
+                        echo "✅ Slack failure notification sent!"
                     } catch (Exception e) {
-                        echo "⚠️ Slack notification failed!"
-                        echo "Error: ${e.class.name}: ${e.message}"
-                        echo "Stack trace:"
-                        e.printStackTrace()
+                        echo "⚠️ Slack notification failed: ${e.message}"
                     }
                 } else {
                     echo "❌ Build failed! (Slack notifications disabled)"
