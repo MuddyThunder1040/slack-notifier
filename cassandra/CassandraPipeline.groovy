@@ -10,6 +10,11 @@ pipeline {
     
     parameters {
         choice(
+            name: 'MODULE',
+            choices: ['cassandra', 'opscenter'],
+            description: 'Select which module to execute Terraform operations on'
+        )
+        choice(
             name: 'TF_ACTION',
             choices: ['plan', 'apply', 'destroy', 'init', 'validate', 'show', 'output'],
             description: 'Terraform action to perform'
@@ -119,9 +124,10 @@ pipeline {
                 expression { params.TF_ACTION == 'init' || params.TF_ACTION == 'plan' || params.TF_ACTION == 'apply' || params.TF_ACTION == 'destroy' }
             }
             steps {
-                echo 'Initializing Terraform...'
+                echo "Initializing Terraform for module: ${params.MODULE}..."
                 sh '''
                     export PATH=$PATH:~/bin:/usr/local/bin
+                    cd ${MODULE}
                     terraform init
                 '''
             }
@@ -132,9 +138,10 @@ pipeline {
                 expression { params.TF_ACTION == 'validate' }
             }
             steps {
-                echo 'Validating Terraform configuration...'
+                echo "Validating Terraform configuration for module: ${params.MODULE}..."
                 sh '''
                     export PATH=$PATH:~/bin:/usr/local/bin
+                    cd ${MODULE}
                     terraform init -backend=false
                     terraform validate
                 '''
@@ -146,9 +153,10 @@ pipeline {
                 expression { params.TF_ACTION == 'plan' }
             }
             steps {
-                echo 'Creating Terraform plan...'
+                echo "Creating Terraform plan for module: ${params.MODULE}..."
                 sh '''
                     export PATH=$PATH:~/bin:/usr/local/bin
+                    cd ${MODULE}
                     terraform plan -out=tfplan
                     echo ""
                     echo "==================================="
@@ -165,10 +173,11 @@ pipeline {
             }
             steps {
                 script {
-                    echo 'Applying Terraform configuration...'
+                    echo "Applying Terraform configuration for module: ${params.MODULE}..."
                     if (params.AUTO_APPROVE) {
                         sh '''
                             export PATH=$PATH:~/bin:/usr/local/bin
+                            cd ${MODULE}
                             terraform apply -auto-approve
                             echo ""
                             echo "==================================="
@@ -178,6 +187,7 @@ pipeline {
                     } else {
                         sh '''
                             export PATH=$PATH:~/bin:/usr/local/bin
+                            cd ${MODULE}
                             terraform plan -out=tfplan
                             echo ""
                             echo "==================================="
@@ -187,6 +197,7 @@ pipeline {
                         input message: 'Approve terraform apply?', ok: 'Apply'
                         sh '''
                             export PATH=$PATH:~/bin:/usr/local/bin
+                            cd ${MODULE}
                             terraform apply tfplan
                             echo ""
                             echo "==================================="
@@ -204,10 +215,11 @@ pipeline {
             }
             steps {
                 script {
-                    echo 'Destroying Terraform resources...'
+                    echo "Destroying Terraform resources for module: ${params.MODULE}..."
                     if (params.AUTO_APPROVE) {
                         sh '''
                             export PATH=$PATH:~/bin:/usr/local/bin
+                            cd ${MODULE}
                             terraform destroy -auto-approve
                             echo ""
                             echo "==================================="
@@ -217,6 +229,7 @@ pipeline {
                     } else {
                         sh '''
                             export PATH=$PATH:~/bin:/usr/local/bin
+                            cd ${MODULE}
                             terraform plan -destroy -out=tfplan
                             echo ""
                             echo "==================================="
@@ -226,6 +239,7 @@ pipeline {
                         input message: 'Approve terraform destroy?', ok: 'Destroy'
                         sh '''
                             export PATH=$PATH:~/bin:/usr/local/bin
+                            cd ${MODULE}
                             terraform destroy -auto-approve
                             echo ""
                             echo "==================================="
@@ -242,9 +256,10 @@ pipeline {
                 expression { params.TF_ACTION == 'show' }
             }
             steps {
-                echo 'Showing current Terraform state...'
+                echo "Showing current Terraform state for module: ${params.MODULE}..."
                 sh '''
                     export PATH=$PATH:~/bin:/usr/local/bin
+                    cd ${MODULE}
                     terraform show
                 '''
             }
@@ -255,9 +270,10 @@ pipeline {
                 expression { params.TF_ACTION == 'output' }
             }
             steps {
-                echo 'Displaying Terraform outputs...'
+                echo "Displaying Terraform outputs for module: ${params.MODULE}..."
                 sh '''
                     export PATH=$PATH:~/bin:/usr/local/bin
+                    cd ${MODULE}
                     terraform output
                     echo ""
                     echo "==================================="
@@ -269,7 +285,7 @@ pipeline {
         
         stage('Verify Cluster') {
             when {
-                expression { params.TF_ACTION == 'apply' }
+                expression { params.TF_ACTION == 'apply' && params.MODULE == 'cassandra' }
             }
             steps {
                 script {
@@ -329,7 +345,7 @@ pipeline {
                         botUser: true,
                         channel: env.SLACK_CHANNEL,
                         color: 'good',
-                        message: "${emoji} Terraform ${params.TF_ACTION.toUpperCase()} completed successfully!\nJob: ${env.JOB_NAME}\nBuild: ${env.BUILD_NUMBER}\nAction: ${params.TF_ACTION}\nAuto-Approve: ${params.AUTO_APPROVE}\nURL: ${env.BUILD_URL}",
+                        message: "${emoji} Terraform ${params.TF_ACTION.toUpperCase()} completed successfully!\nModule: ${params.MODULE}\nJob: ${env.JOB_NAME}\nBuild: ${env.BUILD_NUMBER}\nAction: ${params.TF_ACTION}\nAuto-Approve: ${params.AUTO_APPROVE}\nURL: ${env.BUILD_URL}",
                         tokenCredentialId: env.SLACK_CREDENTIAL_ID,
                         failOnError: false
                     )
@@ -343,7 +359,7 @@ pipeline {
                         botUser: true,
                         channel: env.SLACK_CHANNEL,
                         color: 'danger',
-                        message: "💥 Terraform ${params.TF_ACTION.toUpperCase()} failed!\nJob: ${env.JOB_NAME}\nBuild: ${env.BUILD_NUMBER}\nAction: ${params.TF_ACTION}\nURL: ${env.BUILD_URL}",
+                        message: "💥 Terraform ${params.TF_ACTION.toUpperCase()} failed!\nModule: ${params.MODULE}\nJob: ${env.JOB_NAME}\nBuild: ${env.BUILD_NUMBER}\nAction: ${params.TF_ACTION}\nURL: ${env.BUILD_URL}",
                         tokenCredentialId: env.SLACK_CREDENTIAL_ID,
                         failOnError: false
                     )
