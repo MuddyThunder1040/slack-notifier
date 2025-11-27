@@ -5,7 +5,6 @@ pipeline {
         ENABLE_SLACK = 'true'
         SLACK_CHANNEL = '#the-restack-notifier'
         SLACK_CREDENTIAL_ID = 'slack-token'
-        TF_WORKSPACE = '/var/jenkins_home/workspace/cassandra-cluster'
         GIT_REPO = 'https://github.com/MuddyThunder1040/aws-topology.git'
     }
     
