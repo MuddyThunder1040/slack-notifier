@@ -30,6 +30,38 @@ pipeline {
             }
         }
         
+        stage('Install Terraform') {
+            steps {
+                echo 'Checking Terraform installation...'
+                sh '''
+                    if ! command -v terraform &> /dev/null; then
+                        echo "Terraform not found. Installing..."
+                        cd /tmp
+                        wget -q https://releases.hashicorp.com/terraform/1.6.6/terraform_1.6.6_linux_amd64.zip
+                        unzip -o terraform_1.6.6_linux_amd64.zip
+                        chmod +x terraform
+                        sudo mv terraform /usr/local/bin/ || mv terraform ~/bin/ || mkdir -p ~/bin && mv terraform ~/bin/
+                        rm -f terraform_1.6.6_linux_amd64.zip
+                        export PATH=$PATH:~/bin
+                        echo "Terraform installed successfully"
+                    else
+                        echo "Terraform already installed: $(terraform version)"
+                    fi
+                    
+                    # Verify installation
+                    if command -v terraform &> /dev/null; then
+                        terraform version
+                    elif [ -f ~/bin/terraform ]; then
+                        ~/bin/terraform version
+                        export PATH=$PATH:~/bin
+                    else
+                        echo "ERROR: Terraform installation failed"
+                        exit 1
+                    fi
+                '''
+            }
+        }
+        
         stage('Terraform Init') {
             when {
                 expression { params.TF_ACTION == 'init' || params.TF_ACTION == 'plan' || params.TF_ACTION == 'apply' || params.TF_ACTION == 'destroy' }
@@ -37,6 +69,7 @@ pipeline {
             steps {
                 echo 'Initializing Terraform...'
                 sh '''
+                    export PATH=$PATH:~/bin:/usr/local/bin
                     terraform init
                 '''
             }
@@ -49,6 +82,7 @@ pipeline {
             steps {
                 echo 'Validating Terraform configuration...'
                 sh '''
+                    export PATH=$PATH:~/bin:/usr/local/bin
                     terraform init -backend=false
                     terraform validate
                 '''
@@ -62,6 +96,7 @@ pipeline {
             steps {
                 echo 'Creating Terraform plan...'
                 sh '''
+                    export PATH=$PATH:~/bin:/usr/local/bin
                     terraform plan -out=tfplan
                     echo ""
                     echo "==================================="
@@ -81,6 +116,7 @@ pipeline {
                     echo 'Applying Terraform configuration...'
                     if (params.AUTO_APPROVE) {
                         sh '''
+                            export PATH=$PATH:~/bin:/usr/local/bin
                             terraform apply -auto-approve
                             echo ""
                             echo "==================================="
@@ -89,6 +125,7 @@ pipeline {
                         '''
                     } else {
                         sh '''
+                            export PATH=$PATH:~/bin:/usr/local/bin
                             terraform plan -out=tfplan
                             echo ""
                             echo "==================================="
@@ -97,6 +134,7 @@ pipeline {
                         '''
                         input message: 'Approve terraform apply?', ok: 'Apply'
                         sh '''
+                            export PATH=$PATH:~/bin:/usr/local/bin
                             terraform apply tfplan
                             echo ""
                             echo "==================================="
@@ -117,6 +155,7 @@ pipeline {
                     echo 'Destroying Terraform resources...'
                     if (params.AUTO_APPROVE) {
                         sh '''
+                            export PATH=$PATH:~/bin:/usr/local/bin
                             terraform destroy -auto-approve
                             echo ""
                             echo "==================================="
@@ -125,6 +164,7 @@ pipeline {
                         '''
                     } else {
                         sh '''
+                            export PATH=$PATH:~/bin:/usr/local/bin
                             terraform plan -destroy -out=tfplan
                             echo ""
                             echo "==================================="
@@ -133,6 +173,7 @@ pipeline {
                         '''
                         input message: 'Approve terraform destroy?', ok: 'Destroy'
                         sh '''
+                            export PATH=$PATH:~/bin:/usr/local/bin
                             terraform destroy -auto-approve
                             echo ""
                             echo "==================================="
@@ -151,6 +192,7 @@ pipeline {
             steps {
                 echo 'Showing current Terraform state...'
                 sh '''
+                    export PATH=$PATH:~/bin:/usr/local/bin
                     terraform show
                 '''
             }
@@ -163,6 +205,7 @@ pipeline {
             steps {
                 echo 'Displaying Terraform outputs...'
                 sh '''
+                    export PATH=$PATH:~/bin:/usr/local/bin
                     terraform output
                     echo ""
                     echo "==================================="
