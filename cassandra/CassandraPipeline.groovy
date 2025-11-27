@@ -124,12 +124,15 @@ pipeline {
                 expression { params.TF_ACTION == 'init' || params.TF_ACTION == 'plan' || params.TF_ACTION == 'apply' || params.TF_ACTION == 'destroy' }
             }
             steps {
-                echo "Initializing Terraform for module: ${params.MODULE}..."
-                sh """
-                    export PATH=$$PATH:~/bin:/usr/local/bin
-                    cd ${params.MODULE}
+                script {
+                    echo "Initializing Terraform for module: ${params.MODULE}..."
+                    env.TF_MODULE = params.MODULE
+                }
+                sh '''
+                    export PATH=$PATH:~/bin:/usr/local/bin
+                    cd ${TF_MODULE}
                     terraform init
-                """
+                '''
             }
         }
         
@@ -138,13 +141,16 @@ pipeline {
                 expression { params.TF_ACTION == 'validate' }
             }
             steps {
-                echo "Validating Terraform configuration for module: ${params.MODULE}..."
-                sh """
-                    export PATH=$$PATH:~/bin:/usr/local/bin
-                    cd ${params.MODULE}
+                script {
+                    echo "Validating Terraform configuration for module: ${params.MODULE}..."
+                    env.TF_MODULE = params.MODULE
+                }
+                sh '''
+                    export PATH=$PATH:~/bin:/usr/local/bin
+                    cd ${TF_MODULE}
                     terraform init -backend=false
                     terraform validate
-                """
+                '''
             }
         }
         
@@ -153,10 +159,13 @@ pipeline {
                 expression { params.TF_ACTION == 'plan' }
             }
             steps {
-                echo "Creating Terraform plan for module: ${params.MODULE}..."
-                sh """
-                    export PATH=$$PATH:~/bin:/usr/local/bin
-                    cd ${params.MODULE}
+                script {
+                    echo "Creating Terraform plan for module: ${params.MODULE}..."
+                    env.TF_MODULE = params.MODULE
+                }
+                sh '''
+                    export PATH=$PATH:~/bin:/usr/local/bin
+                    cd ${TF_MODULE}
                     terraform plan -out=tfplan
                     echo ""
                     echo "==================================="
@@ -174,10 +183,11 @@ pipeline {
             steps {
                 script {
                     echo "Applying Terraform configuration for module: ${params.MODULE}..."
+                    env.TF_MODULE = params.MODULE
                     if (params.AUTO_APPROVE) {
-                        sh """
-                            export PATH=$$PATH:~/bin:/usr/local/bin
-                            cd ${params.MODULE}
+                        sh '''
+                            export PATH=$PATH:~/bin:/usr/local/bin
+                            cd ${TF_MODULE}
                             terraform apply -auto-approve
                             echo ""
                             echo "==================================="
@@ -185,9 +195,9 @@ pipeline {
                             echo "==================================="
                         '''
                     } else {
-                        sh """
-                            export PATH=$$PATH:~/bin:/usr/local/bin
-                            cd ${params.MODULE}
+                        sh '''
+                            export PATH=$PATH:~/bin:/usr/local/bin
+                            cd ${TF_MODULE}
                             terraform plan -out=tfplan
                             echo ""
                             echo "==================================="
@@ -195,9 +205,9 @@ pipeline {
                             echo "==================================="
                         '''
                         input message: 'Approve terraform apply?', ok: 'Apply'
-                        sh """
-                            export PATH=$$PATH:~/bin:/usr/local/bin
-                            cd ${params.MODULE}
+                        sh '''
+                            export PATH=$PATH:~/bin:/usr/local/bin
+                            cd ${TF_MODULE}
                             terraform apply tfplan
                             echo ""
                             echo "==================================="
@@ -216,10 +226,11 @@ pipeline {
             steps {
                 script {
                     echo "Destroying Terraform resources for module: ${params.MODULE}..."
+                    env.TF_MODULE = params.MODULE
                     if (params.AUTO_APPROVE) {
-                        sh """
-                            export PATH=$$PATH:~/bin:/usr/local/bin
-                            cd ${params.MODULE}
+                        sh '''
+                            export PATH=$PATH:~/bin:/usr/local/bin
+                            cd ${TF_MODULE}
                             terraform destroy -auto-approve
                             echo ""
                             echo "==================================="
@@ -227,9 +238,9 @@ pipeline {
                             echo "==================================="
                         '''
                     } else {
-                        sh """
-                            export PATH=$$PATH:~/bin:/usr/local/bin
-                            cd ${params.MODULE}
+                        sh '''
+                            export PATH=$PATH:~/bin:/usr/local/bin
+                            cd ${TF_MODULE}
                             terraform plan -destroy -out=tfplan
                             echo ""
                             echo "==================================="
@@ -237,9 +248,9 @@ pipeline {
                             echo "==================================="
                         '''
                         input message: 'Approve terraform destroy?', ok: 'Destroy'
-                        sh """
-                            export PATH=$$PATH:~/bin:/usr/local/bin
-                            cd ${params.MODULE}
+                        sh '''
+                            export PATH=$PATH:~/bin:/usr/local/bin
+                            cd ${TF_MODULE}
                             terraform destroy -auto-approve
                             echo ""
                             echo "==================================="
@@ -256,12 +267,15 @@ pipeline {
                 expression { params.TF_ACTION == 'show' }
             }
             steps {
-                echo "Showing current Terraform state for module: ${params.MODULE}..."
-                sh """
-                    export PATH=$$PATH:~/bin:/usr/local/bin
-                    cd ${params.MODULE}
+                script {
+                    echo "Showing current Terraform state for module: ${params.MODULE}..."
+                    env.TF_MODULE = params.MODULE
+                }
+                sh '''
+                    export PATH=$PATH:~/bin:/usr/local/bin
+                    cd ${TF_MODULE}
                     terraform show
-                """
+                '''
             }
         }
         
@@ -270,10 +284,13 @@ pipeline {
                 expression { params.TF_ACTION == 'output' }
             }
             steps {
-                echo "Displaying Terraform outputs for module: ${params.MODULE}..."
-                sh """
-                    export PATH=$$PATH:~/bin:/usr/local/bin
-                    cd ${params.MODULE}
+                script {
+                    echo "Displaying Terraform outputs for module: ${params.MODULE}..."
+                    env.TF_MODULE = params.MODULE
+                }
+                sh '''
+                    export PATH=$PATH:~/bin:/usr/local/bin
+                    cd ${TF_MODULE}
                     terraform output
                     echo ""
                     echo "==================================="
