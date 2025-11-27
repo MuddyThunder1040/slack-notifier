@@ -126,7 +126,7 @@ pipeline {
             steps {
                 echo "Initializing Terraform for module: ${params.MODULE}..."
                 sh """
-                    export PATH=\$PATH:~/bin:/usr/local/bin
+                    export PATH=$$PATH:~/bin:/usr/local/bin
                     cd ${params.MODULE}
                     terraform init
                 """
@@ -140,7 +140,7 @@ pipeline {
             steps {
                 echo "Validating Terraform configuration for module: ${params.MODULE}..."
                 sh """
-                    export PATH=\$PATH:~/bin:/usr/local/bin
+                    export PATH=$$PATH:~/bin:/usr/local/bin
                     cd ${params.MODULE}
                     terraform init -backend=false
                     terraform validate
@@ -155,7 +155,7 @@ pipeline {
             steps {
                 echo "Creating Terraform plan for module: ${params.MODULE}..."
                 sh """
-                    export PATH=\$PATH:~/bin:/usr/local/bin
+                    export PATH=$$PATH:~/bin:/usr/local/bin
                     cd ${params.MODULE}
                     terraform plan -out=tfplan
                     echo ""
@@ -176,7 +176,7 @@ pipeline {
                     echo "Applying Terraform configuration for module: ${params.MODULE}..."
                     if (params.AUTO_APPROVE) {
                         sh """
-                            export PATH=\$PATH:~/bin:/usr/local/bin
+                            export PATH=$$PATH:~/bin:/usr/local/bin
                             cd ${params.MODULE}
                             terraform apply -auto-approve
                             echo ""
@@ -186,7 +186,7 @@ pipeline {
                         '''
                     } else {
                         sh """
-                            export PATH=\$PATH:~/bin:/usr/local/bin
+                            export PATH=$$PATH:~/bin:/usr/local/bin
                             cd ${params.MODULE}
                             terraform plan -out=tfplan
                             echo ""
@@ -196,7 +196,7 @@ pipeline {
                         '''
                         input message: 'Approve terraform apply?', ok: 'Apply'
                         sh """
-                            export PATH=\$PATH:~/bin:/usr/local/bin
+                            export PATH=$$PATH:~/bin:/usr/local/bin
                             cd ${params.MODULE}
                             terraform apply tfplan
                             echo ""
@@ -218,7 +218,7 @@ pipeline {
                     echo "Destroying Terraform resources for module: ${params.MODULE}..."
                     if (params.AUTO_APPROVE) {
                         sh """
-                            export PATH=\$PATH:~/bin:/usr/local/bin
+                            export PATH=$$PATH:~/bin:/usr/local/bin
                             cd ${params.MODULE}
                             terraform destroy -auto-approve
                             echo ""
@@ -228,7 +228,7 @@ pipeline {
                         '''
                     } else {
                         sh """
-                            export PATH=\$PATH:~/bin:/usr/local/bin
+                            export PATH=$$PATH:~/bin:/usr/local/bin
                             cd ${params.MODULE}
                             terraform plan -destroy -out=tfplan
                             echo ""
@@ -238,7 +238,7 @@ pipeline {
                         '''
                         input message: 'Approve terraform destroy?', ok: 'Destroy'
                         sh """
-                            export PATH=\$PATH:~/bin:/usr/local/bin
+                            export PATH=$$PATH:~/bin:/usr/local/bin
                             cd ${params.MODULE}
                             terraform destroy -auto-approve
                             echo ""
@@ -258,7 +258,7 @@ pipeline {
             steps {
                 echo "Showing current Terraform state for module: ${params.MODULE}..."
                 sh """
-                    export PATH=\$PATH:~/bin:/usr/local/bin
+                    export PATH=$$PATH:~/bin:/usr/local/bin
                     cd ${params.MODULE}
                     terraform show
                 """
@@ -272,7 +272,7 @@ pipeline {
             steps {
                 echo "Displaying Terraform outputs for module: ${params.MODULE}..."
                 sh """
-                    export PATH=\$PATH:~/bin:/usr/local/bin
+                    export PATH=$$PATH:~/bin:/usr/local/bin
                     cd ${params.MODULE}
                     terraform output
                     echo ""
