@@ -130,11 +130,11 @@ pipeline {
                     echo "Initializing Terraform for module: ${params.MODULE}..."
                     echo "Number of nodes: ${params.NUM_NODES}"
                     env.TF_MODULE = params.MODULE
-                    env.TF_VAR_num_nodes = params.NUM_NODES
+                    env.TF_VAR_node_count = params.NUM_NODES
                 }
                 sh '''
                     export PATH="$PATH:~/bin:/usr/local/bin"
-                    export TF_VAR_num_nodes="${TF_VAR_num_nodes}"
+                    export TF_VAR_node_count="${TF_VAR_node_count}"
                     cd "${TF_MODULE}"
                     terraform init
                 '''
@@ -150,11 +150,11 @@ pipeline {
                     echo "Validating Terraform configuration for module: ${params.MODULE}..."
                     echo "Number of nodes: ${params.NUM_NODES}"
                     env.TF_MODULE = params.MODULE
-                    env.TF_VAR_num_nodes = params.NUM_NODES
+                    env.TF_VAR_node_count = params.NUM_NODES
                 }
                 sh '''
                     export PATH="$PATH:~/bin:/usr/local/bin"
-                    export TF_VAR_num_nodes="${TF_VAR_num_nodes}"
+                    export TF_VAR_node_count="${TF_VAR_node_count}"
                     cd "${TF_MODULE}"
                     terraform init -backend=false
                     terraform validate
@@ -171,11 +171,11 @@ pipeline {
                     echo "Creating Terraform plan for module: ${params.MODULE}..."
                     echo "Number of nodes: ${params.NUM_NODES}"
                     env.TF_MODULE = params.MODULE
-                    env.TF_VAR_num_nodes = params.NUM_NODES
+                    env.TF_VAR_node_count = params.NUM_NODES
                 }
                 sh '''
                     export PATH="$PATH:~/bin:/usr/local/bin"
-                    export TF_VAR_num_nodes="${TF_VAR_num_nodes}"
+                    export TF_VAR_node_count="${TF_VAR_node_count}"
                     cd "${TF_MODULE}"
                     terraform plan -out=tfplan
                     echo ""
@@ -196,11 +196,11 @@ pipeline {
                     echo "Applying Terraform configuration for module: ${params.MODULE}..."
                     echo "Number of nodes: ${params.NUM_NODES}"
                     env.TF_MODULE = params.MODULE
-                    env.TF_VAR_num_nodes = params.NUM_NODES
+                    env.TF_VAR_node_count = params.NUM_NODES
                     if (params.AUTO_APPROVE) {
                         sh '''
                             export PATH="$PATH:~/bin:/usr/local/bin"
-                            export TF_VAR_num_nodes="${TF_VAR_num_nodes}"
+                            export TF_VAR_node_count="${TF_VAR_node_count}"
                             cd "${TF_MODULE}"
                             terraform apply -auto-approve
                             echo ""
@@ -211,7 +211,7 @@ pipeline {
                     } else {
                         sh '''
                             export PATH="$PATH:~/bin:/usr/local/bin"
-                            export TF_VAR_num_nodes="${TF_VAR_num_nodes}"
+                            export TF_VAR_node_count="${TF_VAR_node_count}"
                             cd "${TF_MODULE}"
                             terraform plan -out=tfplan
                             echo ""
@@ -222,7 +222,7 @@ pipeline {
                         input message: 'Approve terraform apply?', ok: 'Apply'
                         sh '''
                             export PATH="$PATH:~/bin:/usr/local/bin"
-                            export TF_VAR_num_nodes="${TF_VAR_num_nodes}"
+                            export TF_VAR_node_count="${TF_VAR_node_count}"
                             cd "${TF_MODULE}"
                             terraform apply tfplan
                             echo ""
@@ -244,11 +244,11 @@ pipeline {
                     echo "Destroying Terraform resources for module: ${params.MODULE}..."
                     echo "Number of nodes: ${params.NUM_NODES}"
                     env.TF_MODULE = params.MODULE
-                    env.TF_VAR_num_nodes = params.NUM_NODES
+                    env.TF_VAR_node_count = params.NUM_NODES
                     if (params.AUTO_APPROVE) {
                         sh '''
                             export PATH="$PATH:~/bin:/usr/local/bin"
-                            export TF_VAR_num_nodes="${TF_VAR_num_nodes}"
+                            export TF_VAR_node_count="${TF_VAR_node_count}"
                             cd "${TF_MODULE}"
                             terraform destroy -auto-approve
                             echo ""
@@ -259,7 +259,7 @@ pipeline {
                     } else {
                         sh '''
                             export PATH="$PATH:~/bin:/usr/local/bin"
-                            export TF_VAR_num_nodes="${TF_VAR_num_nodes}"
+                            export TF_VAR_node_count="${TF_VAR_node_count}"
                             cd "${TF_MODULE}"
                             terraform plan -destroy -out=tfplan
                             echo ""
@@ -270,7 +270,7 @@ pipeline {
                         input message: 'Approve terraform destroy?', ok: 'Destroy'
                         sh '''
                             export PATH="$PATH:~/bin:/usr/local/bin"
-                            export TF_VAR_num_nodes="${TF_VAR_num_nodes}"
+                            export TF_VAR_node_count="${TF_VAR_node_count}"
                             cd "${TF_MODULE}"
                             terraform destroy -auto-approve
                             echo ""
