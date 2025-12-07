@@ -22,9 +22,16 @@ pipeline {
                     
                     export PATH="$PATH:~/bin:/usr/local/bin"
                     
-                    # Clean up any stuck containers first
+                    # Clean up any stuck containers and processes first
                     echo "🧹 Cleaning up any existing monitoring containers..."
                     docker rm -f prometheus grafana jmx-exporter 2>/dev/null || true
+                    
+                    # Kill any processes using the required ports
+                    echo "🧹 Freeing up ports 9090, 3000, and 5556..."
+                    sudo fuser -k 9090/tcp 2>/dev/null || true
+                    sudo fuser -k 3000/tcp 2>/dev/null || true
+                    sudo fuser -k 5556/tcp 2>/dev/null || true
+                    sleep 2
                     
                     terraform init
                     terraform apply -auto-approve
