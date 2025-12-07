@@ -26,11 +26,11 @@ pipeline {
                     echo "🧹 Cleaning up any existing monitoring containers..."
                     docker rm -f prometheus grafana jmx-exporter 2>/dev/null || true
                     
-                    # Kill any processes using the required ports
+                    # Kill any processes using the required ports (without sudo)
                     echo "🧹 Freeing up ports 9090, 3000, and 5556..."
-                    sudo fuser -k 9090/tcp 2>/dev/null || true
-                    sudo fuser -k 3000/tcp 2>/dev/null || true
-                    sudo fuser -k 5556/tcp 2>/dev/null || true
+                    lsof -ti:9090 | xargs -r kill -9 2>/dev/null || true
+                    lsof -ti:3000 | xargs -r kill -9 2>/dev/null || true
+                    lsof -ti:5556 | xargs -r kill -9 2>/dev/null || true
                     sleep 2
                     
                     terraform init
