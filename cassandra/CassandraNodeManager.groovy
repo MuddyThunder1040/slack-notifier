@@ -68,11 +68,11 @@ pipeline {
                         mv terraform ~/bin/
                         rm -f terraform.zip
                         
-                        export PATH=$PATH:~/bin
+                        export PATH="$PATH:~/bin"
                         echo "Terraform installed successfully to ~/bin"
                     fi
                     
-                    export PATH=$PATH:~/bin
+                    export PATH="$PATH:~/bin"
                     terraform version
                 '''
             }
@@ -89,11 +89,11 @@ pipeline {
                         tar xzvf docker.tgz --strip 1 -C ~/bin docker/docker
                         rm docker.tgz
                         chmod +x ~/bin/docker
-                        export PATH=$PATH:~/bin
+                        export PATH="$PATH:~/bin"
                         echo "Docker CLI installed: $(~/bin/docker --version)"
                     fi
                     
-                    export PATH=$PATH:~/bin
+                    export PATH="$PATH:~/bin"
                     if docker ps &> /dev/null; then
                         echo "✅ Docker is accessible!"
                         docker version --format 'Client: {{.Client.Version}} | Server: {{.Server.Version}}'
@@ -136,7 +136,7 @@ pipeline {
             }
             steps {
                 sh '''
-                    export PATH=$PATH:~/bin
+                    export PATH="$PATH:~/bin"
                     for node in ${SELECTED_NODES}; do
                         echo "🗑️  Destroying ${node}..."
                         docker stop ${node} || true
@@ -153,7 +153,7 @@ pipeline {
             }
             steps {
                 sh '''
-                    export PATH=$PATH:~/bin
+                    export PATH="$PATH:~/bin"
                     for node in ${SELECTED_NODES}; do
                         echo "🗑️  Destroying ${node}..."
                         docker stop ${node} || true
@@ -171,7 +171,7 @@ pipeline {
             }
             steps {
                 sh '''
-                    export PATH=$PATH:~/bin
+                    export PATH="$PATH:~/bin"
                     echo "🗑️  Destroying ALL Cassandra nodes..."
                     for i in 1 2 3 4; do
                         node="cassandra-node-${i}"
@@ -195,7 +195,7 @@ pipeline {
             }
             steps {
                 sh '''
-                    export PATH=$PATH:~/bin
+                    export PATH="$PATH:~/bin"
                     for node in ${SELECTED_NODES}; do
                         echo "⏸️  Stopping ${node}..."
                         docker stop ${node}
@@ -211,7 +211,7 @@ pipeline {
             }
             steps {
                 sh '''
-                    export PATH=$PATH:~/bin
+                    export PATH="$PATH:~/bin"
                     for node in ${SELECTED_NODES}; do
                         echo "▶️  Starting ${node}..."
                         docker start ${node}
@@ -227,7 +227,7 @@ pipeline {
             }
             steps {
                 sh '''
-                    export PATH=$PATH:~/bin
+                    export PATH="$PATH:~/bin"
                     for node in ${SELECTED_NODES}; do
                         echo "🔄 Restarting ${node}..."
                         docker restart ${node}
@@ -243,7 +243,7 @@ pipeline {
             }
             steps {
                 sh '''
-                    export PATH=$PATH:~/bin
+                    export PATH="$PATH:~/bin"
                     for node in ${SELECTED_NODES}; do
                         echo "🔄 Restarting ${node}..."
                         docker restart ${node}
@@ -260,7 +260,7 @@ pipeline {
             }
             steps {
                 sh '''
-                    export PATH=$PATH:~/bin
+                    export PATH="$PATH:~/bin"
                     echo "🔄 Restarting ALL Cassandra nodes..."
                     for i in 1 2 3 4; do
                         node="cassandra-node-${i}"
@@ -276,7 +276,7 @@ pipeline {
         stage('Verify Status') {
             steps {
                 sh '''
-                    export PATH=$PATH:~/bin
+                    export PATH="$PATH:~/bin"
                     echo "📊 Current Cassandra node status:"
                     echo "================================"
                     docker ps -a --filter "name=cassandra-node" --format "table {{.Names}}\\t{{.Status}}\\t{{.Ports}}"
@@ -296,35 +296,9 @@ pipeline {
     post {
         success {
             echo "${params.ACTION} operation completed successfully"
-            script {
-                try {
-                    slackSend(
-                        channel: '#the-restack-notifier',
-                        color: 'good',
-                        message: "✅ Cassandra Node Manager: ${params.ACTION} completed successfully\nNodes: ${env.SELECTED_NODES ?: 'ALL'}",
-                        tokenCredentialId: 'slack-token',
-                        botUser: true
-                    )
-                } catch (Exception e) {
-                    echo "Slack notification failed: ${e.message}"
-                }
-            }
         }
         failure {
             echo "${params.ACTION} operation failed"
-            script {
-                try {
-                    slackSend(
-                        channel: '#the-restack-notifier',
-                        color: 'danger',
-                        message: "❌ Cassandra Node Manager: ${params.ACTION} failed\nNodes: ${env.SELECTED_NODES ?: 'ALL'}",
-                        tokenCredentialId: 'slack-token',
-                        botUser: true
-                    )
-                } catch (Exception e) {
-                    echo "Slack notification failed: ${e.message}"
-                }
-            }
         }
     }
 }
