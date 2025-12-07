@@ -2,9 +2,6 @@ pipeline {
     agent any
     
     environment {
-        ENABLE_SLACK = 'true'
-        SLACK_CHANNEL = '#the-restack-notifier'
-        SLACK_CREDENTIAL_ID = 'slack-token'
         GIT_REPO = 'https://github.com/MuddyThunder1040/aws-topology.git'
     }
     
@@ -58,14 +55,14 @@ pipeline {
                         chmod +x terraform
                         mv terraform ~/bin/
                         rm -f terraform.zip
-                        export PATH=$PATH:~/bin
+                        export PATH="$PATH:~/bin"
                         echo "Terraform installed successfully to ~/bin"
                     else
                         echo "Terraform already installed: $(terraform version)"
                     fi
                     
                     # Verify installation
-                    export PATH=$PATH:~/bin
+                    export PATH="$PATH:~/bin"
                     if command -v terraform &> /dev/null; then
                         terraform version
                     elif [ -f ~/bin/terraform ]; then
@@ -92,7 +89,7 @@ pipeline {
                         tar xzvf docker.tgz --strip 1 -C ~/bin docker/docker
                         rm docker.tgz
                         chmod +x ~/bin/docker
-                        export PATH=$PATH:~/bin
+                        export PATH="$PATH:~/bin"
                         echo "Docker CLI installed: $(~/bin/docker --version)"
                     fi
                     
@@ -101,7 +98,7 @@ pipeline {
                         echo "Docker socket found"
                         
                         # Try to access docker
-                        export PATH=$PATH:~/bin
+                        export PATH="$PATH:~/bin"
                         if docker ps &> /dev/null; then
                             echo "✅ Docker is accessible!"
                             docker version --format 'Client: {{.Client.Version}} | Server: {{.Server.Version}}'
@@ -129,8 +126,8 @@ pipeline {
                     env.TF_MODULE = params.MODULE
                 }
                 sh '''
-                    export PATH=$PATH:~/bin:/usr/local/bin
-                    cd ${TF_MODULE}
+                    export PATH="$PATH:~/bin:/usr/local/bin"
+                    cd "${TF_MODULE}"
                     terraform init
                 '''
             }
@@ -146,8 +143,8 @@ pipeline {
                     env.TF_MODULE = params.MODULE
                 }
                 sh '''
-                    export PATH=$PATH:~/bin:/usr/local/bin
-                    cd ${TF_MODULE}
+                    export PATH="$PATH:~/bin:/usr/local/bin"
+                    cd "${TF_MODULE}"
                     terraform init -backend=false
                     terraform validate
                 '''
@@ -164,8 +161,8 @@ pipeline {
                     env.TF_MODULE = params.MODULE
                 }
                 sh '''
-                    export PATH=$PATH:~/bin:/usr/local/bin
-                    cd ${TF_MODULE}
+                    export PATH="$PATH:~/bin:/usr/local/bin"
+                    cd "${TF_MODULE}"
                     terraform plan -out=tfplan
                     echo ""
                     echo "==================================="
@@ -186,8 +183,8 @@ pipeline {
                     env.TF_MODULE = params.MODULE
                     if (params.AUTO_APPROVE) {
                         sh '''
-                            export PATH=$PATH:~/bin:/usr/local/bin
-                            cd ${TF_MODULE}
+                            export PATH="$PATH:~/bin:/usr/local/bin"
+                            cd "${TF_MODULE}"
                             terraform apply -auto-approve
                             echo ""
                             echo "==================================="
@@ -196,8 +193,8 @@ pipeline {
                         '''
                     } else {
                         sh '''
-                            export PATH=$PATH:~/bin:/usr/local/bin
-                            cd ${TF_MODULE}
+                            export PATH="$PATH:~/bin:/usr/local/bin"
+                            cd "${TF_MODULE}"
                             terraform plan -out=tfplan
                             echo ""
                             echo "==================================="
@@ -206,8 +203,8 @@ pipeline {
                         '''
                         input message: 'Approve terraform apply?', ok: 'Apply'
                         sh '''
-                            export PATH=$PATH:~/bin:/usr/local/bin
-                            cd ${TF_MODULE}
+                            export PATH="$PATH:~/bin:/usr/local/bin"
+                            cd "${TF_MODULE}"
                             terraform apply tfplan
                             echo ""
                             echo "==================================="
@@ -229,8 +226,8 @@ pipeline {
                     env.TF_MODULE = params.MODULE
                     if (params.AUTO_APPROVE) {
                         sh '''
-                            export PATH=$PATH:~/bin:/usr/local/bin
-                            cd ${TF_MODULE}
+                            export PATH="$PATH:~/bin:/usr/local/bin"
+                            cd "${TF_MODULE}"
                             terraform destroy -auto-approve
                             echo ""
                             echo "==================================="
@@ -239,8 +236,8 @@ pipeline {
                         '''
                     } else {
                         sh '''
-                            export PATH=$PATH:~/bin:/usr/local/bin
-                            cd ${TF_MODULE}
+                            export PATH="$PATH:~/bin:/usr/local/bin"
+                            cd "${TF_MODULE}"
                             terraform plan -destroy -out=tfplan
                             echo ""
                             echo "==================================="
@@ -249,8 +246,8 @@ pipeline {
                         '''
                         input message: 'Approve terraform destroy?', ok: 'Destroy'
                         sh '''
-                            export PATH=$PATH:~/bin:/usr/local/bin
-                            cd ${TF_MODULE}
+                            export PATH="$PATH:~/bin:/usr/local/bin"
+                            cd "${TF_MODULE}"
                             terraform destroy -auto-approve
                             echo ""
                             echo "==================================="
@@ -272,8 +269,8 @@ pipeline {
                     env.TF_MODULE = params.MODULE
                 }
                 sh '''
-                    export PATH=$PATH:~/bin:/usr/local/bin
-                    cd ${TF_MODULE}
+                    export PATH="$PATH:~/bin:/usr/local/bin"
+                    cd "${TF_MODULE}"
                     terraform show
                 '''
             }
@@ -289,8 +286,8 @@ pipeline {
                     env.TF_MODULE = params.MODULE
                 }
                 sh '''
-                    export PATH=$PATH:~/bin:/usr/local/bin
-                    cd ${TF_MODULE}
+                    export PATH="$PATH:~/bin:/usr/local/bin"
+                    cd "${TF_MODULE}"
                     terraform output
                     echo ""
                     echo "==================================="
@@ -344,45 +341,6 @@ pipeline {
     }
     
     post {
-        success {
-            script {
-                if (env.ENABLE_SLACK == 'true') {
-                    def actionEmoji = [
-                        'init': '🔧',
-                        'validate': '✅',
-                        'plan': '📋',
-                        'apply': '🚀',
-                        'destroy': '🗑️',
-                        'show': '👁️',
-                        'output': '📊'
-                    ]
-                    def emoji = actionEmoji[params.TF_ACTION] ?: '✅'
-                    
-                    slackSend(
-                        botUser: true,
-                        channel: env.SLACK_CHANNEL,
-                        color: 'good',
-                        message: "${emoji} Terraform ${params.TF_ACTION.toUpperCase()} completed successfully!\nModule: ${params.MODULE}\nJob: ${env.JOB_NAME}\nBuild: ${env.BUILD_NUMBER}\nAction: ${params.TF_ACTION}\nAuto-Approve: ${params.AUTO_APPROVE}\nURL: ${env.BUILD_URL}",
-                        tokenCredentialId: env.SLACK_CREDENTIAL_ID,
-                        failOnError: false
-                    )
-                }
-            }
-        }
-        failure {
-            script {
-                if (env.ENABLE_SLACK == 'true') {
-                    slackSend(
-                        botUser: true,
-                        channel: env.SLACK_CHANNEL,
-                        color: 'danger',
-                        message: "💥 Terraform ${params.TF_ACTION.toUpperCase()} failed!\nModule: ${params.MODULE}\nJob: ${env.JOB_NAME}\nBuild: ${env.BUILD_NUMBER}\nAction: ${params.TF_ACTION}\nURL: ${env.BUILD_URL}",
-                        tokenCredentialId: env.SLACK_CREDENTIAL_ID,
-                        failOnError: false
-                    )
-                }
-            }
-        }
         always {
             echo "Terraform ${params.TF_ACTION} operation completed"
         }
