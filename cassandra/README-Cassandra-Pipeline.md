@@ -1,10 +1,118 @@
-# Cassandra Cluster Terraform Pipeline
+# Cassandra Cluster Management Pipelines
 
-Jenkins pipeline for managing a 4-node Cassandra cluster using Terraform and Docker.
+A collection of Jenkins pipelines for comprehensive Cassandra cluster lifecycle management, from infrastructure deployment to monitoring and emergency operations.
 
-## Pipeline Overview
+## 📁 Pipeline Collection Overview
 
-This pipeline automates Terraform operations for deploying and managing a Cassandra cluster on your local infrastructure.
+This folder contains 5 specialized Jenkins pipelines for managing Cassandra clusters:
+
+### 1. **CassandraPipeline.groovy** - Infrastructure Deployment
+Terraform-based pipeline for deploying and managing Cassandra cluster infrastructure (cassandra nodes, monitoring, opscenter).
+
+**Key Features:**
+- ✅ Multi-module support (cassandra, monitoring, opscenter)
+- ✅ Full Terraform lifecycle (init, plan, apply, destroy, validate, show, output)
+- ✅ Auto-approve option for automated deployments
+- ✅ Automatic cluster health verification
+- ✅ Slack notifications for all operations
+
+**Use Cases:** Deploy new clusters, update infrastructure, tear down environments
+
+---
+
+### 2. **CassandraDataLoader.groovy** - Test Data Generation
+Python-based data loader for inserting realistic stock market test data into Cassandra clusters.
+
+**Key Features:**
+- ✅ Configurable record count (10K - 4M records)
+- ✅ Adjustable batch sizes (50 - 5000)
+- ✅ Parallel workers (1-8 threads)
+- ✅ Schema auto-creation with multiple tables
+- ✅ Realistic stock market data using Faker
+- ✅ Performance metrics and timing
+
+**Use Cases:** Load testing, demo data generation, performance benchmarking
+
+---
+
+### 3. **CassandraNodeManager.groovy** - Node Lifecycle Management
+Pipeline for managing individual or all Cassandra nodes with granular control.
+
+**Key Features:**
+- ✅ Start/stop/restart operations
+- ✅ Selective node management (specify nodes or all)
+- ✅ Complete cluster destruction
+- ✅ Real-time status checking
+- ✅ Confirmation required for destructive actions
+
+**Use Cases:** Node maintenance, rolling restarts, selective node operations
+
+---
+
+### 4. **EmergencyClusterStop.groovy** - Emergency Operations
+Quick response pipeline for stopping Cassandra containers during critical system issues.
+
+**Key Features:**
+- ✅ Immediate resource checking (CPU, memory, containers)
+- ✅ Stop Cassandra-only or all containers
+- ✅ Force remove containers and cleanup
+- ✅ Network cleanup
+- ✅ No confirmation delay for emergencies
+
+**Use Cases:** System overload, runaway processes, emergency maintenance
+
+---
+
+### 5. **MonitoringSetup.groovy** - Observability Stack
+Deploy and manage Prometheus + Grafana + JMX monitoring stack for Cassandra.
+
+**Key Features:**
+- ✅ One-click Prometheus deployment
+- ✅ Pre-configured Grafana dashboards
+- ✅ JMX metrics exporter
+- ✅ Auto-configure data sources
+- ✅ Port conflict resolution
+- ✅ Health checks and access URLs
+
+**Use Cases:** Cluster monitoring, performance tracking, alerting setup
+
+---
+
+## Quick Start Guide
+
+### Initial Deployment Workflow
+
+```
+1. CassandraPipeline.groovy (ACTION: apply)
+   └─> Deploy 4-node Cassandra cluster
+
+2. MonitoringSetup.groovy (ACTION: deploy)
+   └─> Set up monitoring dashboards
+
+3. CassandraDataLoader.groovy
+   └─> Load test data
+
+4. Monitor via Grafana (http://localhost:3001)
+```
+
+### Maintenance Workflow
+
+```
+1. CassandraNodeManager.groovy (ACTION: status)
+   └─> Check cluster health
+
+2. CassandraNodeManager.groovy (ACTION: restart-all)
+   └─> Rolling restart if needed
+
+3. EmergencyClusterStop.groovy (if issues arise)
+   └─> Emergency stop
+```
+
+---
+
+## Pipeline Overview (Legacy: CassandraPipeline.groovy)
+
+This section documents the main infrastructure deployment pipeline.
 
 ## Features
 
@@ -35,7 +143,14 @@ In the Pipeline section:
 - **SCM**: Git
 - **Repository URL**: `https://github.com/MuddyThunder1040/slack-notifier.git`
 - **Branch**: `*/master`
-- **Script Path**: `CassandraPipeline.groovy`
+- **Script Path**: `cassandra/CassandraPipeline.groovy`
+
+> **Note:** All pipelines are now in the `cassandra/` folder. Update your Script Path accordingly:
+> - `cassandra/CassandraPipeline.groovy`
+> - `cassandra/CassandraDataLoader.groovy`
+> - `cassandra/CassandraNodeManager.groovy`
+> - `cassandra/EmergencyClusterStop.groovy`
+> - `cassandra/MonitoringSetup.groovy`
 
 ### 3. Prerequisites on Jenkins Agent
 
