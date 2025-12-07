@@ -22,6 +22,10 @@ pipeline {
                     
                     export PATH="$PATH:~/bin:/usr/local/bin"
                     
+                    # Clean up any stuck containers first
+                    echo "🧹 Cleaning up any existing monitoring containers..."
+                    docker rm -f prometheus grafana jmx-exporter 2>/dev/null || true
+                    
                     terraform init
                     terraform apply -auto-approve
                     
