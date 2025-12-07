@@ -8,7 +8,7 @@ pipeline {
     parameters {
         choice(
             name: 'MODULE',
-            choices: ['cassandra', 'opscenter'],
+            choices: ['cassandra', 'monitoring', 'opscenter'],
             description: 'Select which module to execute Terraform operations on'
         )
         choice(
