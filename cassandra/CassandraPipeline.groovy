@@ -328,7 +328,6 @@ pipeline {
                         echo "CQL Ports:"
                         echo "  Node 1: localhost:9042"
                         echo "  Node 2: localhost:9043"
-                        echo "  Node 3: localhost:9044"
                         echo ""
                         echo "Connect: docker exec -it cassandra-node1 cqlsh"
                         echo "Status:  docker exec -it cassandra-node1 nodetool status"
