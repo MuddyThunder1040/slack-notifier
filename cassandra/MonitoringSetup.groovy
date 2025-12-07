@@ -18,6 +18,11 @@ pipeline {
                 echo '📊 Deploying Prometheus + Grafana monitoring stack...'
                 sh '''
                     cd /home/vishnu/jenkins-agent/workspace/cas-deploy || exit 1
+                    
+                    # Pull latest changes from aws-topology repository
+                    echo "🔄 Pulling latest changes from aws-topology..."
+                    git pull origin master
+                    
                     cd monitoring
                     
                     export PATH="$PATH:~/bin:/usr/local/bin"
