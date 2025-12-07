@@ -18,7 +18,7 @@ pipeline {
         )
         choice(
             name: 'NUM_NODES',
-            choices: ['2', '3', '4'],
+            choices: ['1', '2', '3', '4'],
             description: 'Number of Cassandra nodes to create/manage'
         )
         booleanParam(
