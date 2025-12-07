@@ -1,6 +1,10 @@
 pipeline {
     agent any
     
+    options {
+        description('Demo pipeline for testing Slack notifications on build success and failure')
+    }
+    
     environment {
         ENABLE_SLACK = 'true'
         SLACK_CHANNEL = '#the-restack-notifier'

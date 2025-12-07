@@ -1,6 +1,10 @@
 pipeline {
     agent any
     
+    options {
+        description('Emergency pipeline for quickly stopping Cassandra containers and checking system resources during critical issues')
+    }
+    
     parameters {
         choice(
             name: 'ACTION',

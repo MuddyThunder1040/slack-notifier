@@ -1,6 +1,10 @@
 pipeline {
     agent any
     
+    options {
+        description('Cassandra node lifecycle management pipeline for starting, stopping, restarting, and destroying cluster nodes')
+    }
+    
     parameters {
         choice(
             name: 'ACTION',

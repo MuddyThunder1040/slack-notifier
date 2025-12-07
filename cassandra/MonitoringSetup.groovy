@@ -1,6 +1,10 @@
 pipeline {
     agent any
     
+    options {
+        description('Monitoring stack deployment pipeline for setting up Prometheus, Grafana, and JMX exporter to monitor Cassandra cluster health and performance')
+    }
+    
     parameters {
         choice(
             name: 'ACTION',
