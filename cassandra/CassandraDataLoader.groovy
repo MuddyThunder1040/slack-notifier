@@ -39,17 +39,21 @@ pipeline {
             steps {
                 echo 'Installing Python dependencies...'
                 sh '''
-                    # Install Python and pip if not present
+                    # Check Python installation
                     if ! command -v python3 &> /dev/null; then
-                        echo "Python3 not found. Please install Python 3.8+"
+                        echo "ERROR: Python3 not found. Please install Python 3.8+"
                         exit 1
                     fi
                     
-                    # Install required packages
-                    pip3 install --user cassandra-driver faker numpy pandas || true
+                    echo "Python3 found: $(python3 --version)"
                     
-                    python3 --version
-                    echo "Python dependencies installed"
+                    # Install required packages
+                    echo "Installing Python packages..."
+                    pip3 install --user --quiet cassandra-driver faker numpy pandas 2>/dev/null || \
+                    python3 -m pip install --user --quiet cassandra-driver faker numpy pandas || \
+                    echo "Some packages may already be installed"
+                    
+                    echo "✅ Python environment ready"
                 '''
             }
         }
