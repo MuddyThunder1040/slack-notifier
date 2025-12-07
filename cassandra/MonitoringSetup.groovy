@@ -77,9 +77,9 @@ pipeline {
                     echo "==================================="
                     echo "Access URLs:"
                     echo "==================================="
-                    echo "Grafana:    http://localhost:3000"
-                    echo "Prometheus: http://localhost:9090"
-                    echo "JMX Metrics: http://localhost:5556/metrics"
+                    echo "Grafana:    http://localhost:3001"
+                    echo "Prometheus: http://localhost:9091"
+                    echo "JMX Metrics: http://localhost:5557/metrics"
                     echo ""
                     echo "Grafana Login: admin / admin"
                 '''
@@ -97,15 +97,15 @@ pipeline {
                     sleep 10
                     
                     # Check if services are responding
-                    curl -s http://localhost:3000/api/health || echo "Grafana not ready yet"
-                    curl -s http://localhost:9090/-/healthy || echo "Prometheus not ready yet"
-                    curl -s http://localhost:5556/metrics | head -5 || echo "JMX Exporter not ready yet"
+                    curl -s http://localhost:3001/api/health || echo "Grafana not ready yet"
+                    curl -s http://localhost:9091/-/healthy || echo "Prometheus not ready yet"
+                    curl -s http://localhost:5557/metrics | head -5 || echo "JMX Exporter not ready yet"
                     
                     echo ""
                     echo "==================================="
                     echo "📊 Next Steps:"
                     echo "==================================="
-                    echo "1. Open Grafana: http://localhost:3000"
+                    echo "1. Open Grafana: http://localhost:3001"
                     echo "2. Login: admin / admin"
                     echo "3. Add Prometheus data source:"
                     echo "   URL: http://prometheus:9090"
