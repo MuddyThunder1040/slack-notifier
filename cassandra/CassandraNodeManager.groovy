@@ -4,28 +4,18 @@ pipeline {
     parameters {
         choice(
             name: 'ACTION',
-            choices: ['destroy-single', 'destroy-multiple', 'destroy-all', 'restart-single', 'restart-multiple', 'restart-all', 'start-single', 'start-multiple', 'stop-single', 'stop-multiple'],
+            choices: ['destroy-all', 'restart-all', 'start-all', 'stop-all', 'status'],
             description: 'Select node management action'
         )
         choice(
-            name: 'NODE_1',
-            choices: ['skip', 'include'],
-            description: 'Cassandra Node 1 (port 9042)'
+            name: 'NUM_NODES',
+            choices: ['2', '3', '4'],
+            description: 'Number of Cassandra nodes in cluster'
         )
-        choice(
-            name: 'NODE_2',
-            choices: ['skip', 'include'],
-            description: 'Cassandra Node 2 (port 9043)'
-        )
-        choice(
-            name: 'NODE_3',
-            choices: ['skip', 'include'],
-            description: 'Cassandra Node 3 (port 9044)'
-        )
-        choice(
-            name: 'NODE_4',
-            choices: ['skip', 'include'],
-            description: 'Cassandra Node 4 (port 9045)'
+        string(
+            name: 'NODES_TO_MANAGE',
+            defaultValue: '',
+            description: 'Comma-separated node numbers to manage (e.g., "1,3,4"). Leave empty for all nodes.'
         )
         booleanParam(
             name: 'CONFIRM',
@@ -108,60 +98,37 @@ pipeline {
         stage('Validate Selection') {
             steps {
                 script {
+                    def numNodes = params.NUM_NODES.toInteger()
                     def selectedNodes = []
-                    if (params.NODE_1 == 'include') selectedNodes.add('cassandra-node-1')
-                    if (params.NODE_2 == 'include') selectedNodes.add('cassandra-node-2')
-                    if (params.NODE_3 == 'include') selectedNodes.add('cassandra-node-3')
-                    if (params.NODE_4 == 'include') selectedNodes.add('cassandra-node-4')
                     
-                    if (selectedNodes.isEmpty() && !params.ACTION.contains('all')) {
-                        error("No nodes selected! Please select at least one node or use an 'all' action.")
+                    // Parse nodes to manage
+                    if (params.NODES_TO_MANAGE?.trim()) {
+                        def nodeNumbers = params.NODES_TO_MANAGE.split(',').collect { it.trim().toInteger() }
+                        nodeNumbers.each { nodeNum ->
+                            if (nodeNum >= 1 && nodeNum <= numNodes) {
+                                selectedNodes.add("cassandra-node-${nodeNum}")
+                            } else {
+                                error("Invalid node number: ${nodeNum}. Must be between 1 and ${numNodes}")
+                            }
+                        }
+                    } else {
+                        // If no specific nodes selected, manage all nodes
+                        for (int i = 1; i <= numNodes; i++) {
+                            selectedNodes.add("cassandra-node-${i}")
+                        }
                     }
                     
-                    def destructiveActions = ['destroy-single', 'destroy-multiple', 'destroy-all', 'stop-single', 'stop-multiple']
+                    def destructiveActions = ['destroy-all', 'stop-all']
                     if (destructiveActions.contains(params.ACTION) && !params.CONFIRM) {
                         error("CONFIRM parameter must be checked for destructive actions!")
                     }
                     
                     echo "Action: ${params.ACTION}"
-                    echo "Selected nodes: ${selectedNodes.join(', ')}"
+                    echo "Number of nodes in cluster: ${numNodes}"
+                    echo "Managing nodes: ${selectedNodes.join(', ')}"
                     env.SELECTED_NODES = selectedNodes.join(' ')
+                    env.NUM_NODES = numNodes.toString()
                 }
-            }
-        }
-        
-        stage('Destroy Single Node') {
-            when {
-                expression { params.ACTION == 'destroy-single' }
-            }
-            steps {
-                sh '''
-                    export PATH="$PATH:~/bin"
-                    for node in ${SELECTED_NODES}; do
-                        echo "🗑️  Destroying ${node}..."
-                        docker stop ${node} || true
-                        docker rm -f ${node} || true
-                        echo "✅ ${node} destroyed"
-                    done
-                '''
-            }
-        }
-        
-        stage('Destroy Multiple Nodes') {
-            when {
-                expression { params.ACTION == 'destroy-multiple' }
-            }
-            steps {
-                sh '''
-                    export PATH="$PATH:~/bin"
-                    for node in ${SELECTED_NODES}; do
-                        echo "🗑️  Destroying ${node}..."
-                        docker stop ${node} || true
-                        docker rm -f ${node} || true
-                        echo "✅ ${node} destroyed"
-                    done
-                    echo "All selected nodes destroyed"
-                '''
             }
         }
         
@@ -172,26 +139,27 @@ pipeline {
             steps {
                 sh '''
                     export PATH="$PATH:~/bin"
-                    echo "🗑️  Destroying ALL Cassandra nodes..."
-                    for i in 1 2 3 4; do
-                        node="cassandra-node-${i}"
+                    echo "🗑️  Destroying selected Cassandra nodes..."
+                    for node in ${SELECTED_NODES}; do
                         echo "Destroying ${node}..."
                         docker stop ${node} || true
                         docker rm -f ${node} || true
                     done
                     
-                    echo "Removing network and volumes..."
+                    echo "Cleaning up network and volumes..."
                     docker network rm cassandra-network || true
-                    docker volume rm cassandra-data-1 cassandra-data-2 cassandra-data-3 cassandra-data-4 || true
+                    for i in $(seq 1 ${NUM_NODES}); do
+                        docker volume rm cassandra-data-${i} || true
+                    done
                     
-                    echo "✅ All nodes, network, and volumes destroyed"
+                    echo "✅ Selected nodes, network, and volumes destroyed"
                 '''
             }
         }
         
         stage('Stop Nodes') {
             when {
-                expression { params.ACTION == 'stop-single' || params.ACTION == 'stop-multiple' }
+                expression { params.ACTION == 'stop-all' }
             }
             steps {
                 sh '''
@@ -207,7 +175,7 @@ pipeline {
         
         stage('Start Nodes') {
             when {
-                expression { params.ACTION == 'start-single' || params.ACTION == 'start-multiple' }
+                expression { params.ACTION == 'start-all' }
             }
             steps {
                 sh '''
@@ -221,39 +189,6 @@ pipeline {
             }
         }
         
-        stage('Restart Single Node') {
-            when {
-                expression { params.ACTION == 'restart-single' }
-            }
-            steps {
-                sh '''
-                    export PATH="$PATH:~/bin"
-                    for node in ${SELECTED_NODES}; do
-                        echo "🔄 Restarting ${node}..."
-                        docker restart ${node}
-                        echo "✅ ${node} restarted"
-                    done
-                '''
-            }
-        }
-        
-        stage('Restart Multiple Nodes') {
-            when {
-                expression { params.ACTION == 'restart-multiple' }
-            }
-            steps {
-                sh '''
-                    export PATH="$PATH:~/bin"
-                    for node in ${SELECTED_NODES}; do
-                        echo "🔄 Restarting ${node}..."
-                        docker restart ${node}
-                        sleep 10
-                        echo "✅ ${node} restarted"
-                    done
-                '''
-            }
-        }
-        
         stage('Restart All Nodes') {
             when {
                 expression { params.ACTION == 'restart-all' }
@@ -261,19 +196,21 @@ pipeline {
             steps {
                 sh '''
                     export PATH="$PATH:~/bin"
-                    echo "🔄 Restarting ALL Cassandra nodes..."
-                    for i in 1 2 3 4; do
-                        node="cassandra-node-${i}"
+                    echo "🔄 Restarting selected Cassandra nodes..."
+                    for node in ${SELECTED_NODES}; do
                         echo "Restarting ${node}..."
                         docker restart ${node}
                         sleep 10
+                        echo "✅ ${node} restarted"
                     done
-                    echo "✅ All nodes restarted"
                 '''
             }
         }
         
         stage('Verify Status') {
+            when {
+                expression { params.ACTION == 'status' || params.ACTION == 'restart-all' || params.ACTION == 'start-all' }
+            }
             steps {
                 sh '''
                     export PATH="$PATH:~/bin"

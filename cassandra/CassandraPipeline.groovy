@@ -16,6 +16,11 @@ pipeline {
             choices: ['plan', 'apply', 'destroy', 'init', 'validate', 'show', 'output'],
             description: 'Terraform action to perform'
         )
+        choice(
+            name: 'NUM_NODES',
+            choices: ['2', '3', '4'],
+            description: 'Number of Cassandra nodes to create/manage'
+        )
         booleanParam(
             name: 'AUTO_APPROVE',
             defaultValue: false,
@@ -123,10 +128,13 @@ pipeline {
             steps {
                 script {
                     echo "Initializing Terraform for module: ${params.MODULE}..."
+                    echo "Number of nodes: ${params.NUM_NODES}"
                     env.TF_MODULE = params.MODULE
+                    env.TF_VAR_num_nodes = params.NUM_NODES
                 }
                 sh '''
                     export PATH="$PATH:~/bin:/usr/local/bin"
+                    export TF_VAR_num_nodes="${TF_VAR_num_nodes}"
                     cd "${TF_MODULE}"
                     terraform init
                 '''
@@ -140,10 +148,13 @@ pipeline {
             steps {
                 script {
                     echo "Validating Terraform configuration for module: ${params.MODULE}..."
+                    echo "Number of nodes: ${params.NUM_NODES}"
                     env.TF_MODULE = params.MODULE
+                    env.TF_VAR_num_nodes = params.NUM_NODES
                 }
                 sh '''
                     export PATH="$PATH:~/bin:/usr/local/bin"
+                    export TF_VAR_num_nodes="${TF_VAR_num_nodes}"
                     cd "${TF_MODULE}"
                     terraform init -backend=false
                     terraform validate
@@ -158,10 +169,13 @@ pipeline {
             steps {
                 script {
                     echo "Creating Terraform plan for module: ${params.MODULE}..."
+                    echo "Number of nodes: ${params.NUM_NODES}"
                     env.TF_MODULE = params.MODULE
+                    env.TF_VAR_num_nodes = params.NUM_NODES
                 }
                 sh '''
                     export PATH="$PATH:~/bin:/usr/local/bin"
+                    export TF_VAR_num_nodes="${TF_VAR_num_nodes}"
                     cd "${TF_MODULE}"
                     terraform plan -out=tfplan
                     echo ""
@@ -180,10 +194,13 @@ pipeline {
             steps {
                 script {
                     echo "Applying Terraform configuration for module: ${params.MODULE}..."
+                    echo "Number of nodes: ${params.NUM_NODES}"
                     env.TF_MODULE = params.MODULE
+                    env.TF_VAR_num_nodes = params.NUM_NODES
                     if (params.AUTO_APPROVE) {
                         sh '''
                             export PATH="$PATH:~/bin:/usr/local/bin"
+                            export TF_VAR_num_nodes="${TF_VAR_num_nodes}"
                             cd "${TF_MODULE}"
                             terraform apply -auto-approve
                             echo ""
@@ -194,6 +211,7 @@ pipeline {
                     } else {
                         sh '''
                             export PATH="$PATH:~/bin:/usr/local/bin"
+                            export TF_VAR_num_nodes="${TF_VAR_num_nodes}"
                             cd "${TF_MODULE}"
                             terraform plan -out=tfplan
                             echo ""
@@ -204,6 +222,7 @@ pipeline {
                         input message: 'Approve terraform apply?', ok: 'Apply'
                         sh '''
                             export PATH="$PATH:~/bin:/usr/local/bin"
+                            export TF_VAR_num_nodes="${TF_VAR_num_nodes}"
                             cd "${TF_MODULE}"
                             terraform apply tfplan
                             echo ""
@@ -223,10 +242,13 @@ pipeline {
             steps {
                 script {
                     echo "Destroying Terraform resources for module: ${params.MODULE}..."
+                    echo "Number of nodes: ${params.NUM_NODES}"
                     env.TF_MODULE = params.MODULE
+                    env.TF_VAR_num_nodes = params.NUM_NODES
                     if (params.AUTO_APPROVE) {
                         sh '''
                             export PATH="$PATH:~/bin:/usr/local/bin"
+                            export TF_VAR_num_nodes="${TF_VAR_num_nodes}"
                             cd "${TF_MODULE}"
                             terraform destroy -auto-approve
                             echo ""
@@ -237,6 +259,7 @@ pipeline {
                     } else {
                         sh '''
                             export PATH="$PATH:~/bin:/usr/local/bin"
+                            export TF_VAR_num_nodes="${TF_VAR_num_nodes}"
                             cd "${TF_MODULE}"
                             terraform plan -destroy -out=tfplan
                             echo ""
@@ -247,6 +270,7 @@ pipeline {
                         input message: 'Approve terraform destroy?', ok: 'Destroy'
                         sh '''
                             export PATH="$PATH:~/bin:/usr/local/bin"
+                            export TF_VAR_num_nodes="${TF_VAR_num_nodes}"
                             cd "${TF_MODULE}"
                             terraform destroy -auto-approve
                             echo ""
@@ -304,7 +328,8 @@ pipeline {
             steps {
                 script {
                     echo 'Waiting for Cassandra cluster to initialize...'
-                    sh '''
+                    def numNodes = params.NUM_NODES.toInteger()
+                    sh """
                         echo "Waiting 60 seconds for nodes to start..."
                         sleep 60
                         
@@ -313,12 +338,12 @@ pipeline {
                         echo "Checking Cassandra cluster status..."
                         echo "==================================="
                         
-                        if docker exec cassandra-node1 nodetool status 2>/dev/null; then
+                        if docker exec cassandra-node-1 nodetool status 2>/dev/null; then
                             echo ""
                             echo "✅ Cluster is UP and running!"
                         else
                             echo "⚠️  Cluster is still initializing. Check status later with:"
-                            echo "   docker exec -it cassandra-node1 nodetool status"
+                            echo "   docker exec -it cassandra-node-1 nodetool status"
                         fi
                         
                         echo ""
@@ -326,13 +351,15 @@ pipeline {
                         echo "Connection Information:"
                         echo "==================================="
                         echo "CQL Ports:"
-                        echo "  Node 1: localhost:9042"
-                        echo "  Node 2: localhost:9043"
+                        for i in \$(seq 1 ${numNodes}); do
+                            port=\$((9041 + i))
+                            echo "  Node \${i}: localhost:\${port}"
+                        done
                         echo ""
-                        echo "Connect: docker exec -it cassandra-node1 cqlsh"
-                        echo "Status:  docker exec -it cassandra-node1 nodetool status"
+                        echo "Connect: docker exec -it cassandra-node-1 cqlsh"
+                        echo "Status:  docker exec -it cassandra-node-1 nodetool status"
                         echo "==================================="
-                    '''
+                    """
                 }
             }
         }
