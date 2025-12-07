@@ -4,17 +4,17 @@ pipeline {
     parameters {
         choice(
             name: 'NUM_RECORDS',
-            choices: ['100000', '500000', '1000000', '2000000', '4000000'],
+            choices: ['10000', '50000', '100000', '500000', '1000000', '2000000', '4000000'],
             description: 'Number of stock market records to insert'
         )
         choice(
             name: 'BATCH_SIZE',
-            choices: ['100', '500', '1000', '5000', '10000'],
+            choices: ['50', '100', '500', '1000', '5000'],
             description: 'Batch size for inserts (higher = faster but more memory)'
         )
         choice(
             name: 'NUM_WORKERS',
-            choices: ['1', '2', '4', '8', '16'],
+            choices: ['1', '2', '4', '8'],
             description: 'Number of parallel workers for data loading'
         )
         string(
@@ -96,10 +96,10 @@ def create_schema(session, drop_existing=False):
         print("Dropping existing keyspace...")
         session.execute("DROP KEYSPACE IF EXISTS stock_market")
     
-    # Create keyspace with replication
+    # Create keyspace with replication factor 1 for single node
     session.execute("""
         CREATE KEYSPACE IF NOT EXISTS stock_market 
-        WITH replication = {'class': 'SimpleStrategy', 'replication_factor': 2}
+        WITH replication = {'class': 'SimpleStrategy', 'replication_factor': 1}
     """)
     
     session.set_keyspace('stock_market')
@@ -205,7 +205,7 @@ def generate_company():
 
 def insert_batch(session, table, data, batch_size):
     """Insert data in batches"""
-    batch = BatchStatement(consistency_level=ConsistencyLevel.QUORUM)
+    batch = BatchStatement(consistency_level=ConsistencyLevel.ONE)
     count = 0
     
     if table == 'stock_prices':
@@ -245,7 +245,7 @@ def insert_batch(session, table, data, batch_size):
         
         if count >= batch_size:
             session.execute(batch)
-            batch = BatchStatement(consistency_level=ConsistencyLevel.QUORUM)
+            batch = BatchStatement(consistency_level=ConsistencyLevel.ONE)
             count = 0
     
     if count > 0:
