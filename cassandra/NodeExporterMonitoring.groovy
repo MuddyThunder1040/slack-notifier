@@ -95,6 +95,8 @@ EOF
                 echo '🧹 Cleaning up existing monitoring containers...'
                 sh '''
                     echo "Stopping and removing existing containers..."
+                    docker stop node_exporter prometheus grafana 2>/dev/null || true
+                    sleep 3
                     docker rm -f node_exporter prometheus grafana 2>/dev/null || true
                     
                     echo "Freeing up ports..."
@@ -102,7 +104,28 @@ EOF
                     lsof -ti:9090 | xargs -r kill -9 2>/dev/null || true
                     lsof -ti:3000 | xargs -r kill -9 2>/dev/null || true
                     
-                    sleep 2
+                    echo "Waiting for ports to be released..."
+                    sleep 5
+                    
+                    echo "Verifying ports are free..."
+                    if lsof -ti:9100 > /dev/null 2>&1; then
+                        echo "Port 9100 still in use, forcing cleanup..."
+                        lsof -ti:9100 | xargs -r kill -9 2>/dev/null || true
+                        sleep 2
+                    fi
+                    
+                    if lsof -ti:9090 > /dev/null 2>&1; then
+                        echo "Port 9090 still in use, forcing cleanup..."
+                        lsof -ti:9090 | xargs -r kill -9 2>/dev/null || true
+                        sleep 2
+                    fi
+                    
+                    if lsof -ti:3000 > /dev/null 2>&1; then
+                        echo "Port 3000 still in use, forcing cleanup..."
+                        lsof -ti:3000 | xargs -r kill -9 2>/dev/null || true
+                        sleep 2
+                    fi
+                    
                     echo "✅ Cleanup complete"
                 '''
             }
