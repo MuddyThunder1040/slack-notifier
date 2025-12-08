@@ -4,7 +4,7 @@ A collection of Jenkins pipelines for comprehensive Cassandra cluster lifecycle 
 
 ## 📁 Pipeline Collection Overview
 
-This folder contains 5 specialized Jenkins pipelines for managing Cassandra clusters:
+This folder contains 6 specialized Jenkins pipelines for managing Cassandra clusters and system monitoring:
 
 ### 1. **CassandraPipeline.groovy** - Infrastructure Deployment
 Terraform-based pipeline for deploying and managing Cassandra cluster infrastructure (cassandra nodes, monitoring, opscenter).
@@ -78,6 +78,35 @@ Deploy and manage Prometheus + Grafana + JMX monitoring stack for Cassandra.
 
 ---
 
+### 6. **NodeExporterMonitoring.groovy** - System Metrics & SRE Monitoring
+Complete enterprise-level system monitoring with Node Exporter, Prometheus, and Grafana with pre-configured SRE dashboards.
+
+**Key Features:**
+- ✅ Node Exporter for system metrics (CPU, memory, disk, network)
+- ✅ Prometheus for metric collection and storage
+- ✅ Grafana with auto-imported SRE dashboards
+- ✅ Dashboard 1860: Node Exporter Full (detailed system metrics)
+- ✅ Dashboard 3662: SRE Overview (operations dashboard)
+- ✅ Automatic datasource configuration
+- ✅ Real system metrics with PID namespace access
+- ✅ Enterprise-level monitoring capabilities
+
+**Metrics Collected:**
+- CPU usage (per core & total)
+- Load average & I/O wait
+- Disk latency (await, svctm)
+- Filesystem usage
+- Network throughput
+- Memory pressure
+- TCP connections
+- System calls
+- File descriptors
+- Interrupts
+
+**Use Cases:** System monitoring, SRE operations, performance analysis, capacity planning
+
+---
+
 ## Quick Start Guide
 
 ### Initial Deployment Workflow
@@ -86,13 +115,20 @@ Deploy and manage Prometheus + Grafana + JMX monitoring stack for Cassandra.
 1. CassandraPipeline.groovy (ACTION: apply)
    └─> Deploy 4-node Cassandra cluster
 
-2. MonitoringSetup.groovy (ACTION: deploy)
-   └─> Set up monitoring dashboards
+2. NodeExporterMonitoring.groovy (ACTION: deploy)
+   └─> Set up system-level monitoring (CPU, memory, disk, network)
+   └─> Access: http://localhost:3000 (admin/admin)
 
-3. CassandraDataLoader.groovy
+3. MonitoringSetup.groovy (ACTION: deploy)
+   └─> Set up Cassandra-specific JMX monitoring
+   └─> Access: http://localhost:3001
+
+4. CassandraDataLoader.groovy
    └─> Load test data
 
-4. Monitor via Grafana (http://localhost:3001)
+5. Monitor via:
+   - System Metrics: http://localhost:3000 (Node Exporter dashboards)
+   - Cassandra Metrics: http://localhost:3001 (JMX dashboards)
 ```
 
 ### Maintenance Workflow
@@ -151,6 +187,7 @@ In the Pipeline section:
 > - `cassandra/CassandraNodeManager.groovy`
 > - `cassandra/EmergencyClusterStop.groovy`
 > - `cassandra/MonitoringSetup.groovy`
+> - `cassandra/NodeExporterMonitoring.groovy`
 
 ### 3. Prerequisites on Jenkins Agent
 
