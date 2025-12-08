@@ -1,10 +1,6 @@
 pipeline {
     agent any
     
-    options {
-        description('Complete monitoring stack setup with Node Exporter, Prometheus, and Grafana with pre-configured SRE dashboards for system metrics')
-    }
-    
     parameters {
         choice(
             name: 'ACTION',

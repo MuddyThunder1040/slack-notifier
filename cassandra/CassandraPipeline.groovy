@@ -1,10 +1,6 @@
 pipeline {
     agent any
     
-    options {
-        description('Terraform-based Cassandra cluster deployment pipeline for managing infrastructure modules (cassandra, monitoring, opscenter)')
-    }
-    
     environment {
         GIT_REPO = 'https://github.com/MuddyThunder1040/aws-topology.git'
     }

@@ -1,10 +1,6 @@
 pipeline {
     agent any
     
-    options {
-        description('Python-based data loader pipeline for inserting stock market test data into Cassandra cluster with configurable batch sizes and parallel workers')
-    }
-    
     parameters {
         choice(
             name: 'NUM_RECORDS',
