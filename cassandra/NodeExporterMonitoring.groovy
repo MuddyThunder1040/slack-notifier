@@ -94,37 +94,53 @@ EOF
             steps {
                 echo '🧹 Cleaning up existing monitoring containers...'
                 sh '''
+                    echo "Checking for existing containers..."
+                    docker ps -a --filter "name=node_exporter" --filter "name=prometheus" --filter "name=grafana" --format "{{.Names}}" || true
+                    
                     echo "Stopping and removing existing containers..."
                     docker stop node_exporter prometheus grafana 2>/dev/null || true
                     sleep 3
                     docker rm -f node_exporter prometheus grafana 2>/dev/null || true
                     
-                    echo "Freeing up ports..."
+                    # Remove any containers in created state (failed to start)
+                    echo "Removing any failed containers..."
+                    docker ps -a --filter "name=node_exporter" --filter "status=created" -q | xargs -r docker rm -f 2>/dev/null || true
+                    docker ps -a --filter "name=prometheus" --filter "status=created" -q | xargs -r docker rm -f 2>/dev/null || true
+                    docker ps -a --filter "name=grafana" --filter "status=created" -q | xargs -r docker rm -f 2>/dev/null || true
+                    
+                    echo "Checking for native processes on required ports..."
+                    echo "Port 9100 (Node Exporter):"
+                    netstat -tulnp 2>/dev/null | grep :9100 || echo "  Port 9100 is free"
+                    echo "Port 9090 (Prometheus):"
+                    netstat -tulnp 2>/dev/null | grep :9090 || echo "  Port 9090 is free"
+                    echo "Port 3000 (Grafana):"
+                    netstat -tulnp 2>/dev/null | grep :3000 || echo "  Port 3000 is free"
+                    
+                    echo "Killing any native node_exporter or prometheus processes..."
+                    pkill -9 -f "prometheus-node" 2>/dev/null || true
+                    pkill -9 -f "node_exporter" 2>/dev/null || true
+                    pkill -9 -f "node-exporter" 2>/dev/null || true
+                    
+                    echo "Freeing up ports (method 1: lsof)..."
                     lsof -ti:9100 | xargs -r kill -9 2>/dev/null || true
                     lsof -ti:9090 | xargs -r kill -9 2>/dev/null || true
                     lsof -ti:3000 | xargs -r kill -9 2>/dev/null || true
                     
+                    echo "Freeing up ports (method 2: fuser)..."
+                    fuser -k 9100/tcp 2>/dev/null || true
+                    fuser -k 9090/tcp 2>/dev/null || true
+                    fuser -k 3000/tcp 2>/dev/null || true
+                    
                     echo "Waiting for ports to be released..."
                     sleep 5
                     
-                    echo "Verifying ports are free..."
-                    if lsof -ti:9100 > /dev/null 2>&1; then
-                        echo "Port 9100 still in use, forcing cleanup..."
-                        lsof -ti:9100 | xargs -r kill -9 2>/dev/null || true
-                        sleep 2
-                    fi
-                    
-                    if lsof -ti:9090 > /dev/null 2>&1; then
-                        echo "Port 9090 still in use, forcing cleanup..."
-                        lsof -ti:9090 | xargs -r kill -9 2>/dev/null || true
-                        sleep 2
-                    fi
-                    
-                    if lsof -ti:3000 > /dev/null 2>&1; then
-                        echo "Port 3000 still in use, forcing cleanup..."
-                        lsof -ti:3000 | xargs -r kill -9 2>/dev/null || true
-                        sleep 2
-                    fi
+                    echo "Final verification - ports should be free now:"
+                    echo "Port 9100:"
+                    netstat -tuln 2>/dev/null | grep :9100 || echo "  ✅ Port 9100 is free"
+                    echo "Port 9090:"
+                    netstat -tuln 2>/dev/null | grep :9090 || echo "  ✅ Port 9090 is free"
+                    echo "Port 3000:"
+                    netstat -tuln 2>/dev/null | grep :3000 || echo "  ✅ Port 3000 is free"
                     
                     echo "✅ Cleanup complete"
                 '''
