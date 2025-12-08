@@ -119,27 +119,24 @@ EOF
                     echo ""
                     echo "Killing processes using required ports..."
                     
-                    # Kill port 9100
-                    PORT_9100_PID=$(sudo lsof -ti:9100 2>/dev/null)
-                    if [ ! -z "$PORT_9100_PID" ]; then
-                        echo "Killing process on port 9100 (PID: $PORT_9100_PID)..."
-                        sudo kill -9 $PORT_9100_PID 2>/dev/null || true
+                    # Kill all processes on port 9100
+                    if sudo lsof -ti:9100 2>/dev/null; then
+                        echo "Killing processes on port 9100..."
+                        sudo lsof -ti:9100 | xargs -r sudo kill -9 2>/dev/null || true
                     fi
                     sudo fuser -k 9100/tcp 2>/dev/null || true
                     
-                    # Kill port 9090
-                    PORT_9090_PID=$(sudo lsof -ti:9090 2>/dev/null)
-                    if [ ! -z "$PORT_9090_PID" ]; then
-                        echo "Killing process on port 9090 (PID: $PORT_9090_PID)..."
-                        sudo kill -9 $PORT_9090_PID 2>/dev/null || true
+                    # Kill all processes on port 9090
+                    if sudo lsof -ti:9090 2>/dev/null; then
+                        echo "Killing processes on port 9090..."
+                        sudo lsof -ti:9090 | xargs -r sudo kill -9 2>/dev/null || true
                     fi
                     sudo fuser -k 9090/tcp 2>/dev/null || true
                     
-                    # Kill port 3000
-                    PORT_3000_PID=$(sudo lsof -ti:3000 2>/dev/null)
-                    if [ ! -z "$PORT_3000_PID" ]; then
-                        echo "Killing process on port 3000 (PID: $PORT_3000_PID)..."
-                        sudo kill -9 $PORT_3000_PID 2>/dev/null || true
+                    # Kill all processes on port 3000
+                    if sudo lsof -ti:3000 2>/dev/null; then
+                        echo "Killing processes on port 3000..."
+                        sudo lsof -ti:3000 | xargs -r sudo kill -9 2>/dev/null || true
                     fi
                     sudo fuser -k 3000/tcp 2>/dev/null || true
                     
@@ -152,6 +149,7 @@ EOF
                     if sudo netstat -tuln 2>/dev/null | grep :9100 > /dev/null; then
                         echo "❌ WARNING: Port 9100 still in use!"
                         sudo netstat -tulnp 2>/dev/null | grep :9100
+                        exit 1
                     else
                         echo "✅ Port 9100 is free"
                     fi
@@ -159,6 +157,7 @@ EOF
                     if sudo netstat -tuln 2>/dev/null | grep :9090 > /dev/null; then
                         echo "❌ WARNING: Port 9090 still in use!"
                         sudo netstat -tulnp 2>/dev/null | grep :9090
+                        exit 1
                     else
                         echo "✅ Port 9090 is free"
                     fi
@@ -166,12 +165,13 @@ EOF
                     if sudo netstat -tuln 2>/dev/null | grep :3000 > /dev/null; then
                         echo "❌ WARNING: Port 3000 still in use!"
                         sudo netstat -tulnp 2>/dev/null | grep :3000
+                        exit 1
                     else
                         echo "✅ Port 3000 is free"
                     fi
                     
                     echo ""
-                    echo "✅ Cleanup complete"
+                    echo "✅ Cleanup complete - all ports are free"
                 '''
             }
         }
