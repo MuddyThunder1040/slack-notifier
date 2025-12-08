@@ -108,40 +108,69 @@ EOF
                     docker ps -a --filter "name=prometheus" --filter "status=created" -q | xargs -r docker rm -f 2>/dev/null || true
                     docker ps -a --filter "name=grafana" --filter "status=created" -q | xargs -r docker rm -f 2>/dev/null || true
                     
-                    echo "Checking for native processes on required ports..."
-                    echo "Port 9100 (Node Exporter):"
-                    netstat -tulnp 2>/dev/null | grep :9100 || echo "  Port 9100 is free"
-                    echo "Port 9090 (Prometheus):"
-                    netstat -tulnp 2>/dev/null | grep :9090 || echo "  Port 9090 is free"
-                    echo "Port 3000 (Grafana):"
-                    netstat -tulnp 2>/dev/null | grep :3000 || echo "  Port 3000 is free"
+                    echo "Checking for processes on required ports (with sudo)..."
+                    echo "Port 9100:"
+                    sudo netstat -tulnp 2>/dev/null | grep :9100 || echo "  Port 9100 appears free"
+                    echo "Port 9090:"
+                    sudo netstat -tulnp 2>/dev/null | grep :9090 || echo "  Port 9090 appears free"
+                    echo "Port 3000:"
+                    sudo netstat -tulnp 2>/dev/null | grep :3000 || echo "  Port 3000 appears free"
                     
-                    echo "Killing any native node_exporter or prometheus processes..."
-                    pkill -9 -f "prometheus-node" 2>/dev/null || true
-                    pkill -9 -f "node_exporter" 2>/dev/null || true
-                    pkill -9 -f "node-exporter" 2>/dev/null || true
+                    echo ""
+                    echo "Killing processes using required ports..."
                     
-                    echo "Freeing up ports (method 1: lsof)..."
-                    lsof -ti:9100 | xargs -r kill -9 2>/dev/null || true
-                    lsof -ti:9090 | xargs -r kill -9 2>/dev/null || true
-                    lsof -ti:3000 | xargs -r kill -9 2>/dev/null || true
+                    # Kill port 9100
+                    PORT_9100_PID=$(sudo lsof -ti:9100 2>/dev/null)
+                    if [ ! -z "$PORT_9100_PID" ]; then
+                        echo "Killing process on port 9100 (PID: $PORT_9100_PID)..."
+                        sudo kill -9 $PORT_9100_PID 2>/dev/null || true
+                    fi
+                    sudo fuser -k 9100/tcp 2>/dev/null || true
                     
-                    echo "Freeing up ports (method 2: fuser)..."
-                    fuser -k 9100/tcp 2>/dev/null || true
-                    fuser -k 9090/tcp 2>/dev/null || true
-                    fuser -k 3000/tcp 2>/dev/null || true
+                    # Kill port 9090
+                    PORT_9090_PID=$(sudo lsof -ti:9090 2>/dev/null)
+                    if [ ! -z "$PORT_9090_PID" ]; then
+                        echo "Killing process on port 9090 (PID: $PORT_9090_PID)..."
+                        sudo kill -9 $PORT_9090_PID 2>/dev/null || true
+                    fi
+                    sudo fuser -k 9090/tcp 2>/dev/null || true
                     
-                    echo "Waiting for ports to be released..."
+                    # Kill port 3000
+                    PORT_3000_PID=$(sudo lsof -ti:3000 2>/dev/null)
+                    if [ ! -z "$PORT_3000_PID" ]; then
+                        echo "Killing process on port 3000 (PID: $PORT_3000_PID)..."
+                        sudo kill -9 $PORT_3000_PID 2>/dev/null || true
+                    fi
+                    sudo fuser -k 3000/tcp 2>/dev/null || true
+                    
+                    echo ""
+                    echo "Waiting for ports to be fully released..."
                     sleep 5
                     
-                    echo "Final verification - ports should be free now:"
-                    echo "Port 9100:"
-                    netstat -tuln 2>/dev/null | grep :9100 || echo "  ✅ Port 9100 is free"
-                    echo "Port 9090:"
-                    netstat -tuln 2>/dev/null | grep :9090 || echo "  ✅ Port 9090 is free"
-                    echo "Port 3000:"
-                    netstat -tuln 2>/dev/null | grep :3000 || echo "  ✅ Port 3000 is free"
+                    echo ""
+                    echo "Final verification:"
+                    if sudo netstat -tuln 2>/dev/null | grep :9100 > /dev/null; then
+                        echo "❌ WARNING: Port 9100 still in use!"
+                        sudo netstat -tulnp 2>/dev/null | grep :9100
+                    else
+                        echo "✅ Port 9100 is free"
+                    fi
                     
+                    if sudo netstat -tuln 2>/dev/null | grep :9090 > /dev/null; then
+                        echo "❌ WARNING: Port 9090 still in use!"
+                        sudo netstat -tulnp 2>/dev/null | grep :9090
+                    else
+                        echo "✅ Port 9090 is free"
+                    fi
+                    
+                    if sudo netstat -tuln 2>/dev/null | grep :3000 > /dev/null; then
+                        echo "❌ WARNING: Port 3000 still in use!"
+                        sudo netstat -tulnp 2>/dev/null | grep :3000
+                    else
+                        echo "✅ Port 3000 is free"
+                    fi
+                    
+                    echo ""
                     echo "✅ Cleanup complete"
                 '''
             }
